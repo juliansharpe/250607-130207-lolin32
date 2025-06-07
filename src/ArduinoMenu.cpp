@@ -6,12 +6,13 @@
 #include <menuIO/chainStream.h>
 #include <menuIO/rotaryEventIn.h>
 #include <AiEsp32RotaryEncoder.h>
+#include <ColorDef.h>
+#include "Free_Fonts.h"
 
 // Function prototypes
 void setup();
 void loop();
 void IRAM_ATTR readEncoderISR();
-
 
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(21,22, 5, -1, 2);
 
@@ -48,7 +49,7 @@ ReflowProfile profiles[] = {
   {130, 160, 190, 50}   // Custom 2
 };
 
-const char* profileNames[] = { "Lead-Free", "Leaded" };
+const char* profileNames[] = { "Lead-Free", "Leaded", "Custom 1", "Custom 2" };
 
 // === Settings Variables ===
 int ovenTemp = 80;
@@ -121,31 +122,6 @@ MENU(mainMenu, "Workshop Oven",doNothing,noEvent,wrapStyle
   ,EXIT("<Exit")
 );
 
-#define Black RGB565(0,0,0)
-#define Red	RGB565(255,0,0)
-#define Green RGB565(0,255,0)
-#define Blue RGB565(0,0,255)
-#define Gray RGB565(128,128,128)
-#define LighterRed RGB565(255,150,150)
-#define LighterGreen RGB565(150,255,150)
-#define LighterBlue RGB565(150,150,255)
-#define DarkerRed RGB565(150,0,0)
-#define DarkerGreen RGB565(0,150,0)
-#define DarkerBlue RGB565(0,0,150)
-#define Cyan RGB565(0,255,255)
-#define Magenta RGB565(255,0,255)
-#define Yellow RGB565(255,255,0)
-#define White RGB565(255,255,255)
-
-const colorDef<uint16_t> colors[6] MEMMODE={
-  {{(uint16_t)Black,(uint16_t)Black}, {(uint16_t)Black, (uint16_t)Black,  (uint16_t)Black}},//bgColor
-  {{(uint16_t)Gray, (uint16_t)Gray},  {(uint16_t)Gray, (uint16_t)White, (uint16_t)White}},//fgColor
-  {{(uint16_t)White,(uint16_t)Black}, {(uint16_t)Gray,(uint16_t)White,(uint16_t)Blue}},//valColor
-  {{(uint16_t)White,(uint16_t)Black}, {(uint16_t)Gray, (uint16_t)White,(uint16_t)Blue}},//unitColor
-  {{(uint16_t)White,(uint16_t)Gray},  {(uint16_t)Black, (uint16_t)Black,  (uint16_t)White}},//cursorColor
-  {{(uint16_t)White,(uint16_t)Yellow},{(uint16_t)Black,  (uint16_t)Red,   (uint16_t)Red}},//titleColor
-};
-
 //define serial output device
 idx_t serialTops[MAX_DEPTH]={0};
 serialOut outSerial(Serial,serialTops);
@@ -175,7 +151,7 @@ void setup() {
   gfx.fillScreen(Black);
   gfx.setTextColor(Red,Black);
   gfx.setTextSize(1);
-  // gfx.setFreeFont(FSS9);
+  //gfx.setFreeFont(FF17); 
 
 	rotaryEncoder.begin();
 	rotaryEncoder.setup(readEncoderISR);
