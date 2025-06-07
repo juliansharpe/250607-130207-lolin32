@@ -5,8 +5,14 @@
 #include <menuIO/TFT_eSPIOut.h>
 #include <menuIO/chainStream.h>
 #include <menuIO/rotaryEventIn.h>
+#include <AiEsp32RotaryEncoder.h>
 
-#include "AiEsp32RotaryEncoder.h"
+// Function prototypes
+void setup();
+void loop();
+void IRAM_ATTR readEncoderISR();
+
+
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(21,22, 5, -1, 2);
 
 // === Display ===
