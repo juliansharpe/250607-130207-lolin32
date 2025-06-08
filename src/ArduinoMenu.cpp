@@ -4,6 +4,7 @@
 #include "MenuConfig.h"
 #include <Temp.h>
 #include "ArduinoMenu.h"
+#include "SolderProfile.h"
 
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(21,22, 5, -1, 2);
 
@@ -35,6 +36,14 @@ void StartReflowProfile(ReflowProfile& profile) {
   // Start the reflow profile
   Serial.printf("Starting reflow profile: Preheat %dC, Soak %dC, Peak %dC, Dwell %ds\n",
                 profile.preheatTemp, profile.soakTemp, profile.peakTemp, profile.dwellTime);
+  
+  solderProfile.begin();
+  gfx.fillScreen(Black);
+  gfx.setTextColor(Blue,Black);
+  gfx.setTextSize(1);
+ 
+  solderProfile.drawGraph(gfx, 0, 14, GFX_WIDTH, GFX_HEIGHT-14);
+
   TempInit();
 
   while(1==1) {
