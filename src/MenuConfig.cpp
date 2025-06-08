@@ -66,10 +66,10 @@ MENU(profileMenu, "Edit Profile",doNothing,noEvent,wrapStyle
 );
 
 MENU(reflowStartMenu, "Start Reflow",doNothing,noEvent,wrapStyle
-  ,OP("Lead-Free >",doNothing,noEvent)
-  ,OP("Leaded >",doNothing,noEvent)
-  ,OP("Custom 1 >",doNothing,noEvent)
-  ,OP("Custom 2 >",doNothing,noEvent)
+  ,OP("Start Lead-Free",onProfileStart,enterEvent)
+  ,OP("Start Leaded",onProfileStart,enterEvent)
+  ,OP("Start Custom 1",onProfileStart,enterEvent)
+  ,OP("Start Custom 2",onProfileStart,enterEvent)
   ,EXIT("< Back")
 );
 
@@ -104,7 +104,6 @@ void menuLoop(AiEsp32RotaryEncoder& rotaryEncoder) {
   static long last, val;
   if (rotaryEncoder.encoderChanged()) {
     val = rotaryEncoder.readEncoder();
-    nav.selected();
     nav.doNav(val > last ? downCmd : upCmd);
     last = val;
   }
@@ -115,4 +114,12 @@ void menuLoop(AiEsp32RotaryEncoder& rotaryEncoder) {
 
   nav.poll();
   delay(10);
+}
+
+// === New function for profile start ===
+result onProfileStart(eventMask e, navNode& nav, prompt &item) {
+  Serial.print("Starting profile: ");
+  Serial.println(item.getText());
+  // Add any additional logic here
+  return proceed;
 }

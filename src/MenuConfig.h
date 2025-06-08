@@ -42,3 +42,4 @@ extern Menu::menu mainMenu;
 //extern NAVROOT(nav,mainMenu,MAX_DEPTH,in,out);
 
 void menuLoop(AiEsp32RotaryEncoder& rotaryEncoder);
+result onProfileStart(eventMask e, navNode& nav, prompt &item);
