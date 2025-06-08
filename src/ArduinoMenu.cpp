@@ -2,11 +2,8 @@
 #include <TFT_eSPI.h>
 #include <AiEsp32RotaryEncoder.h>
 #include "MenuConfig.h"
-
-// Function prototypes
-void setup();
-void loop();
-void IRAM_ATTR readEncoderISR();
+#include <Temp.h>
+#include "ArduinoMenu.h"
 
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(21,22, 5, -1, 2);
 
@@ -32,6 +29,17 @@ void setup() {
 	rotaryEncoder.setup(readEncoderISR);
 	rotaryEncoder.setBoundaries(-1000000, 1000000, true);
 	rotaryEncoder.setAcceleration(50);
+}
+
+void StartReflowProfile(ReflowProfile& profile) {
+  // Start the reflow profile
+  Serial.printf("Starting reflow profile: Preheat %dC, Soak %dC, Peak %dC, Dwell %ds\n",
+                profile.preheatTemp, profile.soakTemp, profile.peakTemp, profile.dwellTime);
+  TempInit();
+
+  while(1==1) {
+    Serial.println(ReadTemp());
+  }
 }
 
 void loop() {

@@ -1,5 +1,6 @@
 #include "MenuConfig.h"
 #include "Free_Fonts.h"
+#include "ArduinoMenu.h"
 
 // === Reflow Profile Data ===
 ReflowProfile profiles[] = {
@@ -121,5 +122,7 @@ result onProfileStart(eventMask e, navNode& nav, prompt &item) {
   Serial.print("Starting profile: ");
   Serial.println(item.getText());
   // Add any additional logic here
+  StartReflowProfile( profiles[0] );
   return proceed;
 }
+ 
