@@ -50,8 +50,16 @@ void StartReflowProfile(ReflowProfile& profile) {
   unsigned long startTime = millis();
   while(1==1) {
     delay(250);
-    unsigned long elapsedms = millis() - startTime;
-    float temp = solderProfile.idealTempAt( elapsedms)  + random(-5, 5);  // Simulate temperature with some noise
+    unsigned long elapsedms = (millis() - startTime) * 10;
+    float temp = solderProfile.idealTempAt( elapsedms) * 0.9;
+    //+ random(-5, 5);  // Simulate temperature with some noise
+    
+    SolderProfile::Phase currentPhase = solderProfile.phases[solderProfile.currentPhase()];
+    gfx.setTextSize(1);
+    gfx.setCursor(0, 0);
+    gfx.printf("%s: (%.0f - %.0fC) ", currentPhase.phaseName, 
+               currentPhase.startTemp, currentPhase.endTemp);
+    gfx.printf(" %.0fC", temp);
     solderProfile.update(temp, elapsedms);
   }
 }

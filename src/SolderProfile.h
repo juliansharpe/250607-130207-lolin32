@@ -8,6 +8,7 @@ public:
     enum PhaseType { PREHEAT, SOAK, PEAK, DWELL, COOL, COMPLETE };
 
     struct Phase {
+        const char* phaseName;
         float startTemp;
         float endTemp;
         float achievedTemp;
@@ -16,8 +17,8 @@ public:
         uint32_t startTimeMs;
         bool completed;
 
-        Phase(float s, float e, float minT, float maxT)
-            : startTemp(s), endTemp(e), achievedTemp(e*.95), minTimeMs(minT), maxTimeMs(maxT), startTimeMs(0), completed(false) {}
+        Phase(const char* name, float s, float e, float minT, float maxT)
+            : phaseName(name), startTemp(s), endTemp(e), achievedTemp(e), minTimeMs(minT), maxTimeMs(maxT), startTimeMs(0), completed(false) {}
     };
 
     SolderProfile();
