@@ -42,7 +42,8 @@ void StartReflowProfile(ReflowProfile& profile) {
   gfx.setTextColor(Blue,Black);
   gfx.setTextSize(1);
  
-  solderProfile.drawGraph(gfx, 0, 14, GFX_WIDTH, GFX_HEIGHT-14);
+  solderProfile.initGraph(gfx, 0, 14, GFX_WIDTH, GFX_HEIGHT-14);
+  solderProfile.drawGraph();
 
   TempInit();
 
