@@ -47,8 +47,12 @@ void StartReflowProfile(ReflowProfile& profile) {
 
   TempInit();
 
+  unsigned long startTime = millis();
   while(1==1) {
-    Serial.println(ReadTemp());
+    delay(250);
+    unsigned long elapsedms = millis() - startTime;
+    float temp = solderProfile.idealTempAt( elapsedms)  + random(-5, 5);  // Simulate temperature with some noise
+    solderProfile.update(temp, elapsedms);
   }
 }
 

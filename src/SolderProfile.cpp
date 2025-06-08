@@ -163,4 +163,21 @@ void SolderProfile::drawGraph() {
     // ...add label code if desired...
 }
 
+float SolderProfile::idealTempAt(uint32_t ms) {
+    uint32_t phaseStart = 0;
+    for (int i = 0; i < 5; ++i) {
+        uint32_t phaseEnd = phaseStart + phases[i].maxTimeMs;
+        if (ms <= phaseEnd) {
+            float t = (float)(ms - phaseStart) / (float)(phases[i].maxTimeMs);
+            // Clamp t between 0 and 1
+            if (t < 0) t = 0;
+            if (t > 1) t = 1;
+            return phases[i].startTemp + t * (phases[i].endTemp - phases[i].startTemp);
+        }
+        phaseStart = phaseEnd;
+    }
+    // If time exceeds profile, return last phase's end temp
+    return phases[4].endTemp;
+}
+
 SolderProfile solderProfile;

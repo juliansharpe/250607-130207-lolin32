@@ -25,6 +25,9 @@ public:
     void update(float actualTemp, uint32_t nowMs);
     PhaseType currentPhase() const;
     bool isComplete() const;
+    float idealTempAt(uint32_t ms);
+
+    // Must call initGraph before drawGraph
     void initGraph(TFT_eSPI& tft, int x, int y, int w, int h);
     void drawGraph();
 
