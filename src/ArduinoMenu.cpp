@@ -37,7 +37,7 @@ void StartReflowProfile(ReflowProfile& profile) {
   Serial.printf("Starting reflow profile: Preheat %dC, Soak %dC, Peak %dC, Dwell %ds\n",
                 profile.preheatTemp, profile.soakTemp, profile.peakTemp, profile.dwellTime);
   
-  solderProfile.begin();
+  solderProfile.startReflow();
   gfx.fillScreen(Black);
   gfx.setTextColor(Blue,Black);
   gfx.setTextSize(1);
@@ -51,8 +51,7 @@ void StartReflowProfile(ReflowProfile& profile) {
   while(1==1) {
     delay(250);
     unsigned long elapsedms = (millis() - startTime) * 10;
-    float temp = solderProfile.idealTempAt( elapsedms) * 0.9;
-    //+ random(-5, 5);  // Simulate temperature with some noise
+    float temp = solderProfile.getIdealTemp() * 0.9;
     
     SolderProfile::Phase currentPhase = solderProfile.phases[solderProfile.currentPhase()];
     gfx.setTextSize(1);
@@ -60,7 +59,7 @@ void StartReflowProfile(ReflowProfile& profile) {
     gfx.printf("%s: (%.0f - %.0fC) ", currentPhase.phaseName, 
                currentPhase.startTemp, currentPhase.endTemp);
     gfx.printf(" %.0fC", temp);
-    solderProfile.update(temp, elapsedms);
+    solderProfile.update(temp);
   }
 }
 
