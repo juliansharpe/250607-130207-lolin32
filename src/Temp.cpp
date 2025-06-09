@@ -14,7 +14,14 @@ MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
 
 // double Kp = 1.7, Ki = 0.075, Kd = 55;
 //double Kp = 1.7, Ki = 0.05, Kd = 35;
-double Kp = 1.9, Ki = 0.05, Kd = 35;
+//double Kp = 1.9, Ki = 0.05, Kd = 35;
+//double Kp = 2.5, Ki = 0.05, Kd = 25; // Overshooting
+//double Kp = 2.5, Ki = 0.05, Kd = 35; 
+// double Kp = 3, Ki = 0.05, Kd = 35; // Overshooting slightly. Decrease Kp to 2.75
+//double Kp = 2.75, Ki = 0.05, Kd = 35; // Overshooting 
+//double Kp = 2.8, Ki = 0.05, Kd = 40;
+double Kp = 2.0, Ki = 0.025, Kd = 45;
+
 PID_v2 myPID(Kp, Ki, Kd, PID::Direct);
 
 float currentReading;

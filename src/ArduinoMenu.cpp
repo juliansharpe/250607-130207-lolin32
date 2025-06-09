@@ -91,10 +91,9 @@ void StartReflowProfile(ReflowProfile& profile) {
 
       // Update the PID target temperature based on the current phase
       float setpoint = solderProfile.getSetpoint();
+      //setpoint = 100.0; 
       SetPIDTargetTemp(setpoint);
     
-      // Update the solder profile with the current temperature
-      solderProfile.update(temp);
     
       // Redraw the graph
       //solderProfile.drawGraph();
@@ -102,9 +101,12 @@ void StartReflowProfile(ReflowProfile& profile) {
       // Get PID output and control elements
       float pidOutput = GetPIDOutput(temp);
 
-      Serial.printf("Phase: %s, Temp: %.1fC, Setpoint: %.1fC, PID Output: %.1f%%\n",
+    // Update the solder profile with the current temperature
+      solderProfile.update(temp, pidOutput);
+
+      Serial.printf("Phase: %s, Temp: %.1fC, Setpoint: %.1fC, Diff: %.1fC, PID Output: %.0f% (%.0f%,%.0f%,%.0f%)\n",
         solderProfile.phases[solderProfile.currentPhase()].phaseName,
-        temp, setpoint, pidOutput);
+        temp, setpoint, temp - setpoint,  pidOutput, myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD());
 
       if( pidOutput > 50) {
         PWMMain = 100;

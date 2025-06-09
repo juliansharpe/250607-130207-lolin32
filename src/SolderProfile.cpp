@@ -6,9 +6,9 @@
 
 SolderProfile::SolderProfile()
     : phases{
-        Phase("Preheat",  0, 150, PHASE_MS(140), PHASE_MS(160), false),
+        Phase("Preheat",  0, 150, PHASE_MS(180), PHASE_MS(180), false),
         Phase("Soak",   150, 180, PHASE_MS( 80), PHASE_MS(120), false),
-        Phase("Peak",   180, 220, PHASE_MS( 60), PHASE_MS(120), false),
+        Phase("Peak",   180, 220, PHASE_MS(120), PHASE_MS(120), false),
         Phase("Dwell",  220, 200, PHASE_MS( 30), PHASE_MS( 20), false),
         Phase("Cool",   200,   0, PHASE_MS( 60), PHASE_MS( 60), true)
       },
@@ -51,7 +51,7 @@ void SolderProfile::initGraph(TFT_eSPI& tft, int x, int y, int w, int h) {
     if (graphMaxTemp == graphMinTemp) graphMaxTemp += 1;
 }
 
-void SolderProfile::update(float actualTemp) {
+void SolderProfile::update(float actualTemp, float output) {
     unsigned long nowMs = millis();
     if (phaseIdx == COMPLETE) return;
     Phase& phase = phases[phaseIdx];
@@ -78,6 +78,9 @@ void SolderProfile::update(float actualTemp) {
                 tftRef->drawRect(px-2,py-2, 5,5, TFT_YELLOW);
             }
         }
+
+        // Draw a line for the output value
+        tftRef->drawPixel(px, (graphY + graphH) - (output/2), TFT_DARKGREEN);
 
         // Print phase and actual temperature at the top of the screen
         TFT_eSPI& tft = *tftRef;

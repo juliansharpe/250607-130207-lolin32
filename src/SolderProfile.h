@@ -24,7 +24,7 @@ public:
 
     SolderProfile();
     void startReflow();
-    void update(float actualTemp);
+    void update(float actualTemp, float output);
     PhaseType currentPhase() const;
     bool isComplete() const;
     float getIdealTemp();
