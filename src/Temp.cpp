@@ -3,36 +3,43 @@
 #include <SPI.h>
 #include <PID_v2.h>
 #include "temp.h"
+#include "ArduinoMenu.h"
 
 int thermoDO = 39;
 int thermoCS = 32;
 int thermoCLK = 33;
 
-const int fan =           25;
-const int fryerElement =  26;
-const int mainElement =   27;
-
 DWFilter myFilter(3); 
 MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
 
-// ki 0.0025, Alpha = .1
-double Kp = 1.75, Ki = 0.025, Kd = 45;
+// double Kp = 1.7, Ki = 0.075, Kd = 55;
+//double Kp = 1.7, Ki = 0.05, Kd = 35;
+double Kp = 1.9, Ki = 0.05, Kd = 35;
 PID_v2 myPID(Kp, Ki, Kd, PID::Direct);
 
 float currentReading;
 unsigned long lastReadTime = 0L;
 
-void TempInit() {
-    myPID.SetOutputLimits(0, 100);
-    myPID.SetSampleTime(4000);
-    float currentReading = myFilter.filter(thermocouple.readCelsius());
-    myPID.Start(currentReading, 0, 200);
-}
 
 float ReadTemp(bool block) {
-    delay(250);
-    lastReadTime = millis();
-    currentReading = GetFilteredTemp(thermocouple.readCelsius());
+    unsigned long elapsedTime = millis() - lastReadTime;
+    bool readNow = false;
+
+    if( elapsedTime > 250) {
+        // If not blocking and last read was more than 250ms ago, read again
+        readNow = true;
+    } else if( block ) {
+        delay(250);
+        readNow = true;
+    }
+
+    if( readNow ) {
+        currentReading = GetFilteredTemp(thermocouple.readCelsius());
+        lastReadTime = millis();
+        // serial print the temp and the lastreadtime     
+        //Serial.printf("Temp: %.2fC, Time: %lu ms\n", currentReading, lastReadTime);
+    } 
+
     return currentReading;
 }
 
@@ -70,3 +77,27 @@ float Median3(float a, float b, float c) {
     else if ((b > a) != (b > c)) return b;
     else return c;
 }
+
+// PID output functions
+void InitPID() {
+    myPID.SetOutputLimits(0, 100);
+    myPID.SetSampleTime(4000);
+    float currentReading = myFilter.filter(ReadTemp(true));
+    myPID.Start(currentReading, 50, currentReading);
+}
+
+void SetPIDTargetTemp(float temp) {
+    myPID.Setpoint(temp);
+}
+
+float GetPIDOutput(float actualTemp) {  
+    float output = myPID.Run(actualTemp);
+    gfx.setTextColor(TFT_NAVY, TFT_BLACK);
+    gfx.setTextSize(1);
+    gfx.setCursor(0, 0);
+    gfx.printf("%.0fC %.0f:(%.0f,%.0f,%.0f)    ", actualTemp, output, myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD());
+
+    return output;
+}
+
+

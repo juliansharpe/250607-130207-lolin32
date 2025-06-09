@@ -6,25 +6,26 @@
 
 SolderProfile::SolderProfile()
     : phases{
-        Phase("Preheat", 25, 150, PHASE_MS(120), PHASE_MS(120)),
-        Phase("Soak",   150, 180, PHASE_MS( 60), PHASE_MS(120)),
-        Phase("Peak",   180, 220, PHASE_MS( 30), PHASE_MS( 60)),
-        Phase("Dwell",  220, 200, PHASE_MS( 20), PHASE_MS( 20)),
-        Phase("Cool",   200,   0, PHASE_MS( 60), PHASE_MS( 60))
+        Phase("Preheat",  0, 150, PHASE_MS(140), PHASE_MS(160), false),
+        Phase("Soak",   150, 180, PHASE_MS( 80), PHASE_MS(120), false),
+        Phase("Peak",   180, 220, PHASE_MS( 60), PHASE_MS(120), false),
+        Phase("Dwell",  220, 200, PHASE_MS( 30), PHASE_MS( 20), false),
+        Phase("Cool",   200,   0, PHASE_MS( 60), PHASE_MS( 60), true)
       },
       phaseIdx(PREHEAT),
       tftRef(nullptr),
       graphX(0), graphY(0), graphW(0), graphH(0),
       graphMinTemp(0), graphMaxTemp(phases[0].startTemp), graphTotalTime(0)
-{}
+{} 
 
-void SolderProfile::begin() {
+void SolderProfile::startReflow() {
+    reflowStartTime = millis();
     phaseIdx = PREHEAT;
     for (int i = 0; i < 5; ++i) {
-        phases[i].achievedTemp = 0;
         phases[i].startTimeMs = 0;
         phases[i].completed = false;
     }
+    phases[0].startTimeMs = reflowStartTime;
 }
 
 void SolderProfile::initGraph(TFT_eSPI& tft, int x, int y, int w, int h) {
@@ -45,10 +46,13 @@ void SolderProfile::initGraph(TFT_eSPI& tft, int x, int y, int w, int h) {
         if (phases[i].startTemp > graphMaxTemp) graphMaxTemp = phases[i].startTemp;
         if (phases[i].endTemp > graphMaxTemp) graphMaxTemp = phases[i].endTemp;
     }
+    graphTotalTime += 60000;
+    graphMaxTemp += 25;
     if (graphMaxTemp == graphMinTemp) graphMaxTemp += 1;
 }
 
-void SolderProfile::update(float actualTemp, uint32_t nowMs) {
+void SolderProfile::update(float actualTemp) {
+    unsigned long nowMs = millis();
     if (phaseIdx == COMPLETE) return;
     Phase& phase = phases[phaseIdx];
 
@@ -63,17 +67,25 @@ void SolderProfile::update(float actualTemp, uint32_t nowMs) {
         float minTemp = graphMinTemp;
         float maxTemp = graphMaxTemp;
 
-        uint32_t profileElapsed = 0;
-        for (int i = 0; i < phaseIdx; ++i) {
-            profileElapsed += phases[i].minTimeMs;
-        }
-        profileElapsed += elapsed;
-
+        // Calculate elapsed time since reflow started
+        uint32_t profileElapsed = nowMs - reflowStartTime;
+        
         int px = graphX + (int)((profileElapsed * graphW) / totalTime);
         int py = graphY + graphH - (int)((actualTemp - minTemp) * graphH / (maxTemp - minTemp));
         if (px >= graphX && px < graphX + graphW && py >= graphY && py < graphY + graphH) {
             tftRef->drawPixel(px, py, TFT_YELLOW);
+            if( elapsed < 100) {
+                tftRef->drawRect(px-2,py-2, 5,5, TFT_YELLOW);
+            }
         }
+
+        // Print phase and actual temperature at the top of the screen
+        TFT_eSPI& tft = *tftRef;
+        tft.setTextColor(TFT_NAVY, TFT_BLACK);
+        tft.setTextSize(1);
+        tft.setCursor(0, 0);
+        //tft.printf("%s T:%.0fC      ", phase.phaseName, actualTemp);
+
     }
     // --- End plot actual temp ---
 
@@ -83,14 +95,14 @@ void SolderProfile::update(float actualTemp, uint32_t nowMs) {
 
     if ((tempReached && minTimeReached) || maxTimeExceeded) {
         phase.completed = true;
-        nextPhase(nowMs);
+        nextPhase(nowMs);        
     }
+
 }
 
 void SolderProfile::nextPhase(uint32_t nowMs) {
     if (phaseIdx < COOL) {
         phaseIdx = static_cast<PhaseType>(phaseIdx + 1);
-        phases[phaseIdx].startTimeMs = nowMs;
     } else {
         phaseIdx = COMPLETE;
     }
@@ -119,13 +131,13 @@ void SolderProfile::drawGraph() {
     int tempStep = 50;
     for (int temp = ((int)minTemp / tempStep) * tempStep; temp <= (int)maxTemp; temp += tempStep) {
         int py = graphY + graphH - (int)((temp - minTemp) * graphH / (maxTemp - minTemp));
-        if( (temp % 100) == 0) { // every 100 degrees
+        if( (temp % 100) == 0) {
             tft.drawFastHLine(graphX, py, graphW, TFT_NAVY);
         } else {
             tft.drawFastHLine(graphX, py, graphW, 0x0008);
         }
         tft.setTextColor(TFT_NAVY, TFT_BLACK);
-        if( ((temp % 100) == 0) and (temp > 0)) { // every 100 degrees
+        if( ((temp % 100) == 0) and (temp > 0)) {
             tft.setTextSize(1);
             tft.setCursor(graphX+4, py-4);
             tft.printf("%3dc", temp);
@@ -137,7 +149,7 @@ void SolderProfile::drawGraph() {
     for (uint32_t sec = 60; sec < secondsTotal; sec += 60) {
         int px = graphX + (int)((sec * 1000UL * graphW) / totalTime);
         tft.setTextColor(TFT_NAVY, TFT_BLACK);
-        if( sec % 120 == 0) { // every 2 minutes
+        if( sec % 120 == 0) {
             tft.drawFastVLine(px, graphY, graphH, TFT_NAVY);
             tft.setTextSize(1);
             tft.setCursor(px - 10, graphY + graphH - 12);
@@ -147,7 +159,7 @@ void SolderProfile::drawGraph() {
         }
     }
 
-    // Draw profile line
+    // Draw profile line and phase change circles
     uint32_t elapsed = 0;
     int prevX = graphX, prevY = graphY + graphH - (int)((phases[0].startTemp - minTemp) * graphH / (maxTemp - minTemp));
     for (int i = 0; i < 5; ++i) {
@@ -155,6 +167,10 @@ void SolderProfile::drawGraph() {
         int px = graphX + (int)((elapsed * graphW) / totalTime);
         int py = graphY + graphH - (int)((phases[i].endTemp - minTemp) * graphH / (maxTemp - minTemp));
         tft.drawLine(prevX, prevY, px, py, TFT_RED);
+
+        if(i < 4) {
+            tftRef->drawRect(px-1,py-1, 3,3, TFT_RED);
+        }   
         prevX = px;
         prevY = py;
     }
@@ -163,21 +179,31 @@ void SolderProfile::drawGraph() {
     // ...add label code if desired...
 }
 
-float SolderProfile::idealTempAt(uint32_t ms) {
+float SolderProfile::getIdealTemp() {
+    uint32_t nowMs = millis();
+    uint32_t elapsed = nowMs - reflowStartTime;
     uint32_t phaseStart = 0;
     for (int i = 0; i < 5; ++i) {
         uint32_t phaseEnd = phaseStart + phases[i].minTimeMs;
-        if (ms <= phaseEnd) {
-            float t = (float)(ms - phaseStart) / (float)(phases[i].minTimeMs);
-            // Clamp t between 0 and 1
+        if (elapsed <= phaseEnd) {
+            float t = (float)(elapsed - phaseStart) / (float)(phases[i].minTimeMs);
             if (t < 0) t = 0;
             if (t > 1) t = 1;
             return phases[i].startTemp + t * (phases[i].endTemp - phases[i].startTemp);
         }
         phaseStart = phaseEnd;
     }
-    // If time exceeds profile, return last phase's end temp
     return phases[4].endTemp;
+}
+
+float SolderProfile::getSetpoint() {
+    if (phaseIdx == COMPLETE) return phases[4].endTemp;
+    Phase& phase = phases[phaseIdx];
+    if (phase.maxRate) {
+        return phase.endTemp;
+    } else {
+        return getIdealTemp();
+    }
 }
 
 SolderProfile solderProfile;

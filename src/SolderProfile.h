@@ -15,18 +15,20 @@ public:
         uint32_t minTimeMs;
         uint32_t maxTimeMs;
         uint32_t startTimeMs;
+        bool maxRate;
         bool completed;
 
-        Phase(const char* name, float s, float e, float minT, float maxT)
-            : phaseName(name), startTemp(s), endTemp(e), achievedTemp(e), minTimeMs(minT), maxTimeMs(maxT), startTimeMs(0), completed(false) {}
+        Phase(const char* name, float s, float e, float minT, float maxT, bool maxR = false)
+            : phaseName(name), startTemp(s), endTemp(e), achievedTemp(e*0.98), minTimeMs(minT), maxTimeMs(maxT), startTimeMs(0), maxRate(maxR), completed(false) {}
     };
 
     SolderProfile();
-    void begin();
-    void update(float actualTemp, uint32_t nowMs);
+    void startReflow();
+    void update(float actualTemp);
     PhaseType currentPhase() const;
     bool isComplete() const;
-    float idealTempAt(uint32_t ms);
+    float getIdealTemp();
+    float getSetpoint(); // New method
 
     // Must call initGraph before drawGraph
     void initGraph(TFT_eSPI& tft, int x, int y, int w, int h);
@@ -43,6 +45,9 @@ private:
     float graphMinTemp = 0;
     float graphMaxTemp = 0;
     uint32_t graphTotalTime = 0;
+
+    // --- Reflow timing ---
+    uint32_t reflowStartTime = 0;
 };
 
 extern SolderProfile solderProfile;
