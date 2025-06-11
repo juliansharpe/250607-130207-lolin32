@@ -6,7 +6,7 @@
 
 SolderProfile::SolderProfile()
     : phases{
-        Phase("Preheat",  0, 150, PHASE_MS(180), PHASE_MS(180), false),
+        Phase("Preheat",  0, 150, PHASE_MS(140), PHASE_MS(180), false),
         Phase("Soak",   150, 180, PHASE_MS( 80), PHASE_MS(120), false),
         Phase("Peak",   180, 220, PHASE_MS(90), PHASE_MS(120), false),
         Phase("Dwell",  220, 200, PHASE_MS( 30), PHASE_MS( 20), false),
