@@ -28,7 +28,8 @@ public:
     PhaseType currentPhase() const;
     bool isComplete() const;
     float getIdealTemp();
-    float getSetpoint(); // New method
+    float getSetpoint();
+    float getFeedForwardSlope(uint32_t deltaMs); // New method for feed forward slope
 
     // Must call initGraph before drawGraph
     void initGraph(TFT_eSPI& tft, int x, int y, int w, int h);

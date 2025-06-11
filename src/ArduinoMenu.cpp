@@ -58,7 +58,7 @@ void StartReflowProfile(ReflowProfile& profile) {
   digitalWrite(fan,1); // Turn off the fan
   digitalWrite(mainElement,1);
   digitalWrite(fryerElement,1);
-  delay(20000);
+  delay(10000);
 
 
   float temp=0;
@@ -84,29 +84,40 @@ void StartReflowProfile(ReflowProfile& profile) {
     if( elapsed > 250) {
       readtime = millis();
       temp = GetFilteredTemp(ReadTemp(false));
-      gfx.setTextColor(TFT_NAVY, TFT_BLACK);
-      gfx.setTextSize(1);
-      gfx.setCursor(0, 0);
-      gfx.printf("%.1fC           ", temp);
 
       // Update the PID target temperature based on the current phase
       float setpoint = solderProfile.getSetpoint();
       //setpoint = 100.0; 
       SetPIDTargetTemp(setpoint);
-    
-    
-      // Redraw the graph
-      //solderProfile.drawGraph();
 
       // Get PID output and control elements
       float pidOutput = GetPIDOutput(temp);
 
-    // Update the solder profile with the current temperature
-      solderProfile.update(temp, pidOutput);
+      // Add feed-forward control based on the current phase
+      const float maxHeatRate = 100.0 / 120.0; // 100 degrees in 120 seconds
 
-      Serial.printf("Phase: %s, Temp: %.1fC, Setpoint: %.1fC, Diff: %.1fC, PID Output: %.0f% (%.0f%,%.0f%,%.0f%)\n",
+      uint32_t nowMs = millis();
+      float feedForwardSlope = solderProfile.getFeedForwardSlope(10000); // 20 seconds for feed-forward slope
+      float feedForwardPower = (feedForwardSlope / maxHeatRate) * 100.0; // Scale to 0-100
+
+      // Adjust PID output with feed-forward control
+      pidOutput += feedForwardPower;
+      pidOutput = constrain(pidOutput, 0, 100); // Ensure output is within bounds
+
+      // Update the solder profile with the current temperature
+      solderProfile.update(temp, pidOutput); 
+
+      Serial.printf("Phase: %s, Temp: %.1fC, Setpoint: %.1fC, Diff: %.1fC, FF Slope: %.1fC/s, FF Power: : %.0f, PID Output: %.0f% (%.0f%,%.0f%,%.0f%)\n",
         solderProfile.phases[solderProfile.currentPhase()].phaseName,
-        temp, setpoint, temp - setpoint,  pidOutput, myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD());
+        temp, setpoint, temp - setpoint,
+        feedForwardSlope, feedForwardPower,  
+        pidOutput, 
+        myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD());
+
+      gfx.setTextColor(TFT_NAVY, TFT_BLACK);
+      gfx.setTextSize(1);
+      gfx.setCursor(0, 0);
+      gfx.printf("%.0fC %.0f:(%.0f,%.0f,%.0f,%.0f)    ", temp, pidOutput, myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD(), feedForwardPower);
 
       if( pidOutput > 50) {
         PWMMain = 100;

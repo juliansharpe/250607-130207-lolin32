@@ -21,7 +21,11 @@ MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
 //double Kp = 2.75, Ki = 0.05, Kd = 35; // Overshooting 
 //double Kp = 2.8, Ki = 0.05, Kd = 40;
 //double Kp = 2.0, Ki = 0.025, Kd = 45; // very good. But doesn't ramp well at peak temp
-double Kp = 2.5, Ki = 0.025, Kd = 45;
+//double Kp = 2.5, Ki = 0.025, Kd = 45;
+//double Kp = 2.5, Ki = 0.030, Kd = 55;
+//double Kp = 2.5, Ki = 0.030, Kd = 65; 11 Jun 8:53
+double Kp = 2.5, Ki = 0.030, Kd = 75;
+
 
 
 PID_v2 myPID(Kp, Ki, Kd, PID::Direct);
@@ -89,10 +93,10 @@ float Median3(float a, float b, float c) {
 
 // PID output functions
 void InitPID() {
-    myPID.SetOutputLimits(0, 100);
+    myPID.SetOutputLimits(-100, 100);
     myPID.SetSampleTime(4000);
     float currentReading = myFilter.filter(ReadTemp(true));
-    myPID.Start(currentReading, 50, currentReading);
+    myPID.Start(currentReading, 0, currentReading);
 }
 
 void SetPIDTargetTemp(float temp) {
@@ -101,11 +105,6 @@ void SetPIDTargetTemp(float temp) {
 
 float GetPIDOutput(float actualTemp) {  
     float output = myPID.Run(actualTemp);
-    gfx.setTextColor(TFT_NAVY, TFT_BLACK);
-    gfx.setTextSize(1);
-    gfx.setCursor(0, 0);
-    gfx.printf("%.0fC %.0f:(%.0f,%.0f,%.0f)    ", actualTemp, output, myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD());
-
     return output;
 }
 

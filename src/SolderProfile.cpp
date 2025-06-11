@@ -6,9 +6,10 @@
 
 SolderProfile::SolderProfile()
     : phases{
-        Phase("Preheat",  0, 150, PHASE_MS(140), PHASE_MS(180), false),
+        //Phase("Preheat",  0, 150, PHASE_MS(180), PHASE_MS(180), false),
+        Phase("Preheat",  0, 150, PHASE_MS(360), PHASE_MS(360), false),
         Phase("Soak",   150, 180, PHASE_MS( 80), PHASE_MS(120), false),
-        Phase("Peak",   180, 220, PHASE_MS(90), PHASE_MS(120), false),
+        Phase("Peak",   180, 220, PHASE_MS(60), PHASE_MS(120), false),
         Phase("Dwell",  220, 200, PHASE_MS( 30), PHASE_MS( 20), false),
         Phase("Cool",   200,   0, PHASE_MS( 90), PHASE_MS( 90), true)
       },
@@ -207,6 +208,47 @@ float SolderProfile::getSetpoint() {
     } else {
         return getIdealTemp();
     }
+}
+
+float SolderProfile::getFeedForwardSlope(uint32_t deltaMs) {
+    uint32_t nowMs = millis();
+    uint32_t elapsed = nowMs - reflowStartTime + deltaMs;
+    uint32_t phaseStart = 0;
+    int phaseIdxAtTime = -1;
+
+    // Find which phase the time falls into
+    for (int i = 0; i < 5; ++i) {
+        uint32_t phaseEnd = phaseStart + phases[i].minTimeMs;
+        if (elapsed < phaseEnd) {
+            phaseIdxAtTime = i;
+            break;
+        }
+        phaseStart = phaseEnd;
+    }
+
+    // If after all phases, use the last phase
+    if (phaseIdxAtTime == -1) {
+        phaseIdxAtTime = 4;
+    }
+
+    // If the time falls exactly at the end of a phase, use the next phase's slope if possible
+    if (phaseIdxAtTime < 4) {
+        uint32_t phaseEnd = 0;
+        for (int i = 0; i <= phaseIdxAtTime; ++i) {
+            phaseEnd += phases[i].minTimeMs;
+        }
+        if (elapsed == phaseEnd && phaseIdxAtTime+1 < 5) {
+            phaseIdxAtTime++;
+        }
+    }
+
+    // Calculate the slope (deg/sec) for the selected phase
+    const Phase& phase = phases[phaseIdxAtTime];
+    float slope = 0.0f;
+    if (phase.minTimeMs > 0) {
+        slope = (phase.endTemp - phase.startTemp) / ((float)phase.minTimeMs / 1000.0f);
+    }
+    return slope;
 }
 
 SolderProfile solderProfile;
