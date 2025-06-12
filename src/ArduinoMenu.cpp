@@ -97,8 +97,9 @@ void StartReflowProfile(ReflowProfile& profile) {
       const float maxHeatRate = 100.0 / 120.0; // 100 degrees in 120 seconds
 
       uint32_t nowMs = millis();
-      float feedForwardSlope = solderProfile.getFeedForwardSlope(10000); // 20 seconds for feed-forward slope
+      float feedForwardSlope = solderProfile.getFeedForwardSlope(30000); // 30 seconds for feed-forward slope
       float feedForwardPower = (feedForwardSlope / maxHeatRate) * 100.0; // Scale to 0-100
+      feedForwardPower += setpoint / 10; // add term proportional to temperature
 
       // Adjust PID output with feed-forward control
       pidOutput += feedForwardPower;
@@ -107,12 +108,12 @@ void StartReflowProfile(ReflowProfile& profile) {
       // Update the solder profile with the current temperature
       solderProfile.update(temp, pidOutput); 
 
-      Serial.printf("Phase: %s, Temp: %.1fC, Setpoint: %.1fC, Diff: %.1fC, FF Slope: %.1fC/s, FF Power: : %.0f, PID Output: %.0f% (%.0f%,%.0f%,%.0f%)\n",
+      Serial.printf("Phase: %s, Temp: %.1fC, Setpoint: %.1fC, Diff: %.1fC, FF Slope: %.1fC/s, PID Output: %.0f% (%.0f%,%.0f%,%.0f%,%.0f)\n",
         solderProfile.phases[solderProfile.currentPhase()].phaseName,
         temp, setpoint, temp - setpoint,
-        feedForwardSlope, feedForwardPower,  
+        feedForwardSlope,   
         pidOutput, 
-        myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD());
+        myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD(), feedForwardPower);
 
       gfx.setTextColor(TFT_NAVY, TFT_BLACK);
       gfx.setTextSize(1);

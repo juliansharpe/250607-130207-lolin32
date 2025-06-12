@@ -6,12 +6,12 @@
 
 SolderProfile::SolderProfile()
     : phases{
-        //Phase("Preheat",  0, 150, PHASE_MS(180), PHASE_MS(180), false),
-        Phase("Preheat",  0, 150, PHASE_MS(360), PHASE_MS(360), false),
-        Phase("Soak",   150, 180, PHASE_MS( 80), PHASE_MS(120), false),
-        Phase("Peak",   180, 220, PHASE_MS(60), PHASE_MS(120), false),
-        Phase("Dwell",  220, 200, PHASE_MS( 30), PHASE_MS( 20), false),
-        Phase("Cool",   200,   0, PHASE_MS( 90), PHASE_MS( 90), true)
+        Phase("Preheat",  0, 150, PHASE_MS(180), PHASE_MS(180), false),
+       // Phase("Preheat",  0, 150, PHASE_MS(360), PHASE_MS(360), false),
+        Phase("Soak",   150, 180, PHASE_MS(120), PHASE_MS(120), false),
+        Phase("Peak",   180, 235, PHASE_MS(70), PHASE_MS(120), false),
+        Phase("Dwell",  235, 235, PHASE_MS( 30), PHASE_MS( 20), false),
+        Phase("Cool",   220,   0, PHASE_MS( 90), PHASE_MS( 90), true)
       },
       phaseIdx(PREHEAT),
       tftRef(nullptr),

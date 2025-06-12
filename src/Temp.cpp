@@ -24,8 +24,9 @@ MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
 //double Kp = 2.5, Ki = 0.025, Kd = 45;
 //double Kp = 2.5, Ki = 0.030, Kd = 55;
 //double Kp = 2.5, Ki = 0.030, Kd = 65; 11 Jun 8:53
-double Kp = 2.5, Ki = 0.030, Kd = 75;
-
+// double Kp = 2.5, Ki = 0.030, Kd = 75; 9:16pm
+// double Kp = 2.0, Ki = 0.030, Kd = 75; // 12 Jun 7:56 Oscillations much better. Increase feed forward advance
+double Kp = 2.0, Ki = 0.030, Kd = 75; 
 
 
 PID_v2 myPID(Kp, Ki, Kd, PID::Direct);
