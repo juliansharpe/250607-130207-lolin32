@@ -53,13 +53,29 @@ void StartReflowProfile(ReflowProfile& profile) {
   gfx.fillScreen(Black);
   gfx.setTextColor(Blue,Black);
   gfx.setTextSize(1);
- 
-  // Prime
+
+  // --- Prime: Heat chamber to +5C above current temp, max 30s ---
   digitalWrite(fan,1); // Turn off the fan
   digitalWrite(mainElement,1);
   digitalWrite(fryerElement,1);
-  delay(10000);
 
+  float primeStartTemp = GetFilteredTemp(ReadTemp(true));
+  float primeTarget = primeStartTemp + 5.0f;
+  unsigned long primeStart = millis();
+  const unsigned long primeTimeout = 30000; // 30 seconds
+
+  while (millis() - primeStart < primeTimeout) {
+    float t = GetFilteredTemp(ReadTemp(false));
+    gfx.setTextColor(TFT_NAVY, TFT_BLACK);
+    gfx.setTextSize(1);
+    gfx.setCursor(0, 0);
+    gfx.printf("Priming: %.1f/%.1fC   ", t, primeTarget);
+    if (t >= primeTarget) break;
+    delay(100);
+  }
+
+  digitalWrite(mainElement,0);
+  digitalWrite(fryerElement,0);
 
   float temp=0;
   uint32_t startPWMTime = 0;
@@ -78,6 +94,12 @@ void StartReflowProfile(ReflowProfile& profile) {
 
   digitalWrite(fan,1); // Turn on the fan
   unsigned long readtime = millis();
+  float feedForwardAccumulator = -1.0;
+
+  // --- Track error statistics ---
+  float diffSum = 0.0f;
+  float diffMax = 0.0f;
+  uint32_t diffCount = 0;
 
   while( solderProfile.currentPhase() != SolderProfile::COMPLETE) {    
     unsigned long elapsed = millis() - readtime;
@@ -87,7 +109,6 @@ void StartReflowProfile(ReflowProfile& profile) {
 
       // Update the PID target temperature based on the current phase
       float setpoint = solderProfile.getSetpoint();
-      //setpoint = 100.0; 
       SetPIDTargetTemp(setpoint);
 
       // Get PID output and control elements
@@ -97,23 +118,34 @@ void StartReflowProfile(ReflowProfile& profile) {
       const float maxHeatRate = 100.0 / 120.0; // 100 degrees in 120 seconds
 
       uint32_t nowMs = millis();
-      float feedForwardSlope = solderProfile.getFeedForwardSlope(30000); // 30 seconds for feed-forward slope
+      float feedForwardSlope = solderProfile.getFeedForwardSlope(15000); // seconds for feed-forward slope
       float feedForwardPower = (feedForwardSlope / maxHeatRate) * 100.0; // Scale to 0-100
       feedForwardPower += setpoint / 10; // add term proportional to temperature
 
+      feedForwardAccumulator = feedForwardPower; 
+
       // Adjust PID output with feed-forward control
-      pidOutput += feedForwardPower;
+      pidOutput += feedForwardAccumulator;
       pidOutput = constrain(pidOutput, 0, 100); // Ensure output is within bounds
+
+      // --- Track error statistics ---
+      float diff = temp - setpoint;
+      diffSum += fabs(diff);
+      if (fabs(diff) > diffMax) diffMax = fabs(diff);
+      diffCount++;
 
       // Update the solder profile with the current temperature
       solderProfile.update(temp, pidOutput); 
 
-      Serial.printf("Phase: %s, Temp: %.1fC, Setpoint: %.1fC, Diff: %.1fC, FF Slope: %.1fC/s, PID Output: %.0f% (%.0f%,%.0f%,%.0f%,%.0f)\n",
+      Serial.printf(
+        "P:%s Temp:(A:%.1f,S:%.1f,D:%.1f) Temp Stats(A:%.1f M:%.1f) FF:%.1f Out:%.0f (P:%.0f,I:%.0f,D:%.0f,F:%.0f)\n",
         solderProfile.phases[solderProfile.currentPhase()].phaseName,
-        temp, setpoint, temp - setpoint,
-        feedForwardSlope,   
-        pidOutput, 
-        myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD(), feedForwardPower);
+        temp, setpoint, diff,
+        (diffCount > 0 ? diffSum / diffCount : 0.0f), diffMax,
+        feedForwardSlope,
+        pidOutput,
+        myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD(), feedForwardPower
+      );
 
       gfx.setTextColor(TFT_NAVY, TFT_BLACK);
       gfx.setTextSize(1);
