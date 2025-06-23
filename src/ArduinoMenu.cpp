@@ -43,6 +43,8 @@ void setup() {
 	rotaryEncoder.setup(readEncoderISR);
 	rotaryEncoder.setBoundaries(-1000000, 1000000, true);
 	rotaryEncoder.setAcceleration(50);
+
+  InitTempSensor();
 }
 
 void StartReflowProfile(ReflowProfile& profile) {

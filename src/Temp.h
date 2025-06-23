@@ -11,4 +11,7 @@ void InitPID();
 void SetPIDTargetTemp(float temp);
 float GetPIDOutput(float actualTemp);
 
+// New method for sensor initialization
+void InitTempSensor();
+
 extern PID_v2 myPID;

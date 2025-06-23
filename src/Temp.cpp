@@ -1,16 +1,20 @@
-#include "max6675.h"
+#include <Adafruit_MAX31856.h>
 #include "DWFilter.h" 
 #include <SPI.h>
 #include <PID_v2.h>
 #include "temp.h"
 #include "ArduinoMenu.h"
 
-int thermoDO = 39;
-int thermoCS = 32;
-int thermoCLK = 33;
+// MAX31856 SPI pins (adjust as needed)
+#define MAX31856_CS   32
+#define MAX31856_SCK  33
+#define MAX31856_MISO 39
+#define MAX31856_MOSI 14
+#define MAX31856_DataReady 13
+
 
 DWFilter myFilter(2); 
-MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
+Adafruit_MAX31856 thermocouple(MAX31856_CS, MAX31856_MOSI, MAX31856_MISO, MAX31856_SCK);
 
 // double Kp = 1.7, Ki = 0.075, Kd = 55;
 //double Kp = 1.7, Ki = 0.05, Kd = 35;
@@ -34,27 +38,27 @@ double Kp = 2.5, Ki = 0.02, Kd = 75;
 PID_v2 myPID(Kp, Ki, Kd, PID::Direct);
 
 float currentReading;
-unsigned long lastReadTime = 0L;
-
-
 float ReadTemp(bool block) {
-    unsigned long elapsedTime = millis() - lastReadTime;
     bool readNow = false;
 
-    if( elapsedTime > 250) {
-        // If not blocking and last read was more than 250ms ago, read again
-        readNow = true;
-    } else if( block ) {
-        delay(250);
-        readNow = true;
+    if(block) {
+        unsigned long startTime = millis();
+        if( (digitalRead(MAX31856_DataReady) != LOW) &&
+            (millis() - startTime < 500) ) {
+            delay(10);
+        } 
     }
 
+    if( digitalRead(MAX31856_DataReady) == LOW ) {
+        // Data is ready, read immediately
+        readNow = true;
+    }   
+
+
     if( readNow ) {
-        float rawTemp = thermocouple.readCelsius();
+        float rawTemp = thermocouple.readThermocoupleTemperature();
         currentReading = GetFilteredTemp(rawTemp);
-        
-        lastReadTime = millis();
-        // serial print the temp and the lastreadtime     
+
         Serial.printf("Temp: (R:%.2fC, F:%.2fC) d:%.2fC\n", rawTemp, currentReading, rawTemp-currentReading );
     } 
 
@@ -88,8 +92,9 @@ float GetFilteredTemp(float temp) {
         movingAverage = median;
     }
 
-    movingAverage = 0.1* median + (1 - 0.1) * movingAverage;
-    return movingAverage;
+    movingAverage = 0.2* median + (1 - 0.2) * movingAverage;
+    //return movingAverage;
+    return temp;
 }
 
 float Median3(float a, float b, float c) {
@@ -129,6 +134,14 @@ void SetPIDTargetTemp(float temp) {
 float GetPIDOutput(float actualTemp) {  
     float output = myPID.Run(actualTemp);
     return output;
+}
+
+void InitTempSensor() {
+    thermocouple.begin();
+    thermocouple.setThermocoupleType(MAX31856_TCTYPE_K); // Set to your thermocouple type if different
+    thermocouple.setNoiseFilter(MAX31856_NOISE_FILTER_50HZ); // Set noise filter to 50Hz
+    thermocouple.setConversionMode(MAX31856_CONTINUOUS); // Set to continuous
+    pinMode(MAX31856_DataReady, INPUT); // Set Data Ready pin as input with pull-up
 }
 
 
