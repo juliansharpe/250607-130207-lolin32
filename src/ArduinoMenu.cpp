@@ -54,28 +54,31 @@ void StartReflowProfile(ReflowProfile& profile) {
   gfx.setTextColor(Blue,Black);
   gfx.setTextSize(1);
 
-  // --- Prime: Heat chamber to +5C above current temp, max 30s ---
-  digitalWrite(fan,1); // Turn off the fan
-  digitalWrite(mainElement,1);
-  digitalWrite(fryerElement,1);
+  // // --- Prime: Heat chamber to +2C above current temp, max 30s ---
+  // digitalWrite(fan,1); // Turn off the fan
+  // digitalWrite(mainElement,1);
+  // digitalWrite(fryerElement,1);
 
-  float primeStartTemp = GetFilteredTemp(ReadTemp(true));
-  float primeTarget = primeStartTemp + 5.0f;
-  unsigned long primeStart = millis();
-  const unsigned long primeTimeout = 30000; // 30 seconds
+  // unsigned long primeStart = millis();
+  // const unsigned long primeTimeout = 30000; // 30 seconds
 
-  while (millis() - primeStart < primeTimeout) {
-    float t = GetFilteredTemp(ReadTemp(false));
-    gfx.setTextColor(TFT_NAVY, TFT_BLACK);
-    gfx.setTextSize(1);
-    gfx.setCursor(0, 0);
-    gfx.printf("Priming: %.1f/%.1fC   ", t, primeTarget);
-    if (t >= primeTarget) break;
-    delay(100);
-  }
+  // float oldTemp = GetFilteredTemp(ReadTemp(true));
+  // while (millis() - primeStart < primeTimeout) {
+  //   delay(1000);
+  //   float newTemp = GetFilteredTemp(ReadTemp(true));
+  //   if( (newTemp - oldTemp) > 0.3f) {
+  //     break;
+  //   }
+    
+  //   gfx.setTextColor(TFT_NAVY, TFT_BLACK);
+  //   gfx.setTextSize(1);
+  //   gfx.setCursor(0, 0);
+  //   gfx.printf("Priming: %.1f - %.1fC   ", newTemp, newTemp - oldTemp);
+  //   oldTemp = newTemp;
+  // }
 
-  digitalWrite(mainElement,0);
-  digitalWrite(fryerElement,0);
+  // digitalWrite(mainElement,0);
+  // digitalWrite(fryerElement,0);
 
   float temp=0;
   uint32_t startPWMTime = 0;
@@ -94,7 +97,9 @@ void StartReflowProfile(ReflowProfile& profile) {
 
   digitalWrite(fan,1); // Turn on the fan
   unsigned long readtime = millis();
-  float feedForwardAccumulator = -1.0;
+  float feedForwardAccumulator = -1000.0;
+  uint8_t mainPWMSet, fryPWMset;
+
 
   // --- Track error statistics ---
   float diffSum = 0.0f;
@@ -118,11 +123,16 @@ void StartReflowProfile(ReflowProfile& profile) {
       const float maxHeatRate = 100.0 / 120.0; // 100 degrees in 120 seconds
 
       uint32_t nowMs = millis();
-      float feedForwardSlope = solderProfile.getFeedForwardSlope(15000); // seconds for feed-forward slope
+      float feedForwardSlope = solderProfile.getFeedForwardSlope(20000); // seconds for feed-forward slope
       float feedForwardPower = (feedForwardSlope / maxHeatRate) * 100.0; // Scale to 0-100
       feedForwardPower += setpoint / 10; // add term proportional to temperature
 
-      feedForwardAccumulator = feedForwardPower; 
+      if( feedForwardAccumulator < -999.0) {
+        feedForwardAccumulator = feedForwardPower;
+      } else {
+        // Smooth the feed-forward control
+        feedForwardAccumulator = (0.0f * feedForwardAccumulator) + (1.0f * feedForwardPower);
+      }
 
       // Adjust PID output with feed-forward control
       pidOutput += feedForwardAccumulator;
@@ -131,26 +141,26 @@ void StartReflowProfile(ReflowProfile& profile) {
       // --- Track error statistics ---
       float diff = temp - setpoint;
       diffSum += fabs(diff);
-      if (fabs(diff) > diffMax) diffMax = fabs(diff);
+      diffMax = diffMax * 0.999 + (fabs(diff)*0.001);
       diffCount++;
 
       // Update the solder profile with the current temperature
       solderProfile.update(temp, pidOutput); 
 
       Serial.printf(
-        "P:%s Temp:(A:%.1f,S:%.1f,D:%.1f) Temp Stats(A:%.1f M:%.1f) FF:%.1f Out:%.0f (P:%.0f,I:%.0f,D:%.0f,F:%.0f)\n",
+        "P:%s Temp:(A:%.1f,S:%.1f,D:%.1f) TStats(A:%.1f M:%.1f) FF:%.1f Out:%.0f (P:%.0f,I:%.0f,D:%.0f,F:%.0f)\n",
         solderProfile.phases[solderProfile.currentPhase()].phaseName,
         temp, setpoint, diff,
         (diffCount > 0 ? diffSum / diffCount : 0.0f), diffMax,
-        feedForwardSlope,
+        feedForwardAccumulator,
         pidOutput,
         myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD(), feedForwardPower
       );
 
-      gfx.setTextColor(TFT_NAVY, TFT_BLACK);
+      gfx.setTextColor(TFT_BLUE, TFT_BLACK);
       gfx.setTextSize(1);
       gfx.setCursor(0, 0);
-      gfx.printf("%.0fC %.0f:(%.0f,%.0f,%.0f,%.0f)    ", temp, pidOutput, myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD(), feedForwardPower);
+      gfx.printf("%.0fC %.0f:(%.0f,%.0f,%.0f,%.0f)    ", temp, pidOutput, myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD(), feedForwardAccumulator);
 
       if( pidOutput > 50) {
         PWMMain = 100;
@@ -163,17 +173,20 @@ void StartReflowProfile(ReflowProfile& profile) {
      
     uint32_t delta = (millis() - startPWMTime) / 10;
     if(delta > MaxPWM) {
+      // Start PWM cycle
+      mainPWMSet = PWMMain;
+      fryPWMset = PWMFryer;
       startPWMTime = millis();
       delta = 0;
       digitalWrite(mainElement,1);
       digitalWrite(fryerElement,1);
     }
 
-    if( delta >= PWMMain ) {
+    if( delta >= mainPWMSet ) {
       digitalWrite(mainElement,0);
     }
 
-    if( delta >= PWMFryer ) {
+    if( delta >= fryPWMset ) {
       digitalWrite(fryerElement,0);
     }
   }
@@ -181,9 +194,9 @@ void StartReflowProfile(ReflowProfile& profile) {
 
 void loop() {
   menuLoop(rotaryEncoder);
-  gfx.setTextColor(TFT_NAVY, TFT_BLACK);
+  gfx.setTextColor(TFT_BLUE, TFT_BLACK);
   gfx.setTextSize(1);
-  gfx.setCursor(0, 0);
+  gfx.setCursor(0, 128 - 16);
   gfx.printf("%.0fC           ", GetFilteredTemp(ReadTemp(true)));
 }
 

@@ -29,7 +29,7 @@ public:
     bool isComplete() const;
     float getIdealTemp();
     float getSetpoint();
-    float getFeedForwardSlope(uint32_t deltaMs); // New method for feed forward slope
+    float getFeedForwardSlope(uint32_t deltaMs);
 
     // Must call initGraph before drawGraph
     void initGraph(TFT_eSPI& tft, int x, int y, int w, int h);

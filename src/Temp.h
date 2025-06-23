@@ -4,6 +4,7 @@
 float ReadTemp(bool block = false);
 float GetFilteredTemp(float temp);
 float Median3(float a, float b, float c);
+float Median5(float a, float b, float c, float d, float e);
 
 // New methods
 void InitPID();
