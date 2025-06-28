@@ -5,6 +5,7 @@
 #include <Temp.h>
 #include "ArduinoMenu.h"
 #include "SolderProfile.h"
+#include "Free_Fonts.h"
 
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(21,22, 5, -1, 2);
 
@@ -36,6 +37,7 @@ void setup() {
   gfx.fillScreen(Black);
   gfx.setTextColor(Red,Black);
   gfx.setTextSize(1);
+  gfx.setTextFont(2);
 
   // Initialize the rotary encoder
 	SPI.begin();
@@ -48,7 +50,17 @@ void setup() {
 }
 
 void StartReflowProfile(ReflowProfile& profile) {
-  // Start the reflow profile
+  // Convert ReflowProfile to SolderProfileParams (simple 4-phase profile)
+  SolderProfileParams params;
+  params.phases[0] = {"Preheat", 0, (float)profile.preheatTemp, 180000, 180000, false};
+  params.phases[1] = {"Soak", (float)profile.preheatTemp, (float)profile.soakTemp, 120000, 120000, false};
+  params.phases[2] = {"Peak", (float)profile.soakTemp, (float)profile.peakTemp, 70000, 120000, true};
+  params.phases[3] = {"Dwell", (float)profile.peakTemp, (float)profile.peakTemp, (uint32_t)profile.dwellTime*1000, (uint32_t)profile.dwellTime*1000, false};
+  params.phases[4] = {"Cool", (float)profile.peakTemp, 0, 90000, 90000, true};
+  params.numPhases = 5;
+
+  solderProfile.setProfile(params);
+
   Serial.printf("Starting reflow profile: Preheat %dC, Soak %dC, Peak %dC, Dwell %ds\n",
                 profile.preheatTemp, profile.soakTemp, profile.peakTemp, profile.dwellTime);
   
@@ -195,10 +207,19 @@ void StartReflowProfile(ReflowProfile& profile) {
 }
 
 void loop() {
+  static char textBuffer[50];
+
   menuLoop(rotaryEncoder);
   gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+  gfx.setTextFont(1);
   gfx.setTextSize(1);
-  gfx.setCursor(0, 128 - 16);
-  gfx.printf("%.0fC           ", GetFilteredTemp(ReadTemp(true)));
+  gfx.setTextDatum(BR_DATUM);
+  snprintf(textBuffer, sizeof(textBuffer), "  %.0fC", GetFilteredTemp(ReadTemp(true)));
+  gfx.drawString(textBuffer, 159, 127);
+ 
+//  gfx.printf("  %.0fC", GetFilteredTemp(ReadTemp(true)));
+  gfx.setTextFont(2);
+  gfx.setTextDatum(TL_DATUM);
+  
 }
 

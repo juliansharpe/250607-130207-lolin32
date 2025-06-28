@@ -6,11 +6,11 @@
 ReflowProfile profiles[] = {
   {150, 180, 220, 60}, // Lead-Free
   {130, 160, 190, 50},  // Leaded
-  {130, 160, 190, 50},  // Custom 1
+  {130, 160, 190, 50},  // Low temp
   {130, 160, 190, 50}   // Custom 2
 };
 
-const char* profileNames[] = { "Lead-Free", "Leaded", "Custom 1", "Custom 2" };
+const char* profileNames[] = { "Lead-Free", "Leaded", "Low temp", "Custom 2" };
 
 // === Settings Variables ===
 int ovenTemp = 80;
@@ -42,7 +42,7 @@ MENU(leadedMenu, "Leaded",doNothing,noEvent,wrapStyle
   ,EXIT("< Back")
 );
 
-MENU(custom1Menu, "Custom 1",doNothing,noEvent,wrapStyle
+MENU(custom1Menu, "183 Low Temp",doNothing,noEvent,wrapStyle
   ,FIELD(profiles[2].preheatTemp, "Preheat", "C", 100, 180, 1, 0, doNothing,noEvent,noStyle)
   ,FIELD(profiles[2].soakTemp, "Soak", "C", 120, 200, 1, 0, doNothing,noEvent,noStyle)
   ,FIELD(profiles[2].peakTemp, "Peak", "C", 160, 230, 1, 0, doNothing,noEvent,noStyle)
@@ -67,10 +67,10 @@ MENU(profileMenu, "Edit Profile",doNothing,noEvent,wrapStyle
 );
 
 MENU(reflowStartMenu, "Start Reflow",doNothing,noEvent,wrapStyle
-  ,OP("Start Lead-Free",onProfileStart,enterEvent)
-  ,OP("Start Leaded",onProfileStart,enterEvent)
-  ,OP("Start Custom 1",onProfileStart,enterEvent)
-  ,OP("Start Custom 2",onProfileStart,enterEvent)
+  ,OP("Start Lead-Free",onStartLeadFree,enterEvent)
+  ,OP("Start Leaded",onStartLeaded,enterEvent)
+  ,OP("Start Low temp",onStartLowTemp,enterEvent)
+  ,OP("Start Custom 2",onStartCustom2,enterEvent)
   ,EXIT("< Back")
 );
 
@@ -117,12 +117,20 @@ void menuLoop(AiEsp32RotaryEncoder& rotaryEncoder) {
   delay(10);
 }
 
-// === New function for profile start ===
-result onProfileStart(eventMask e, navNode& nav, prompt &item) {
-  Serial.print("Starting profile: ");
-  Serial.println(item.getText());
-  // Add any additional logic here
-  StartReflowProfile( profiles[0] );
+// === Functions for each Start action ===
+result onStartLeadFree(eventMask e, navNode& nav, prompt &item) {
+  StartReflowProfile(profiles[0]);
   return proceed;
 }
- 
+result onStartLeaded(eventMask e, navNode& nav, prompt &item) {
+  StartReflowProfile(profiles[1]);
+  return proceed;
+}
+result onStartLowTemp(eventMask e, navNode& nav, prompt &item) {
+  StartReflowProfile(profiles[2]);
+  return proceed;
+}
+result onStartCustom2(eventMask e, navNode& nav, prompt &item) {
+  StartReflowProfile(profiles[3]);
+  return proceed;
+}
