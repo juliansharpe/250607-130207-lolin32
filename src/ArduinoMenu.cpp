@@ -217,9 +217,11 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
 
     float temp = 0;
     float setTemp = defaultTemp;
+    int setTimeMins = 60; // default 60 minutes
     unsigned long readtime = millis();
     oven.reset();
-    bool editingTemp = false;
+    enum EditMode { NONE, TEMP, TIME };
+    EditMode editMode = NONE;
     long lastEncoder = rotaryEncoder.readEncoder();
 
     while (true) {
@@ -232,25 +234,78 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
         gfx.setTextColor(TFT_BLUE, TFT_BLACK);
         gfx.setTextSize(1);
         gfx.setCursor(0, 0);
-        if (editingTemp) {
+        if (editMode == TEMP) {
             gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
             gfx.printf("Oven: %.0fC/", temp);
-            gfx.setTextColor(TFT_BLUE, TFT_BLACK);                
-            gfx.printf("%.0fC", setTemp);
+            gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+            gfx.printf("%.0fC  ", setTemp);
+            gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+            gfx.printf("Timer: ");
+            gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+            if (setTimeMins == 0) {
+                gfx.printf("Off");
+            } else {
+                int hrs = setTimeMins / 60;
+                int mins = setTimeMins % 60;
+                if (hrs > 0) {
+                    gfx.printf("%d:%02d", hrs, mins);
+                } else {
+                    gfx.printf("%d min", mins);
+                }
+            }
+            gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+            gfx.printf("  (click to set timer)");
+        } else if (editMode == TIME) {
+            gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+            gfx.printf("Set Timer: ");
+            gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+            if (setTimeMins == 0) {
+                gfx.printf("Off");
+            } else {
+                int hrs = setTimeMins / 60;
+                int mins = setTimeMins % 60;
+                if (hrs > 0) {
+                    gfx.printf("%d:%02d", hrs, mins);
+                } else {
+                    gfx.printf("%d min", mins);
+                }
+            }
+            gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+            gfx.printf("  (click to start)");
         } else {
             gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-            gfx.printf("Oven: %.0fC/%.0fC", temp, setTemp);
+            gfx.printf("Oven: %.0fC/%.0fC  Timer: ", temp, setTemp);
+            if (setTimeMins == 0) {
+                gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+                gfx.printf("Off");
+            } else {
+                gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+                int hrs = setTimeMins / 60;
+                int mins = setTimeMins % 60;
+                if (hrs > 0) {
+                    gfx.printf("%d:%02d", hrs, mins);
+                } else {
+                    gfx.printf("%d min", mins);
+                }
+            }
+            gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+            gfx.printf("  (click to edit)");
         }
-    
 
-        // Handle rotary button click to enter/exit edit mode
+        // Handle rotary button click to cycle edit modes
         if (rotaryEncoder.isEncoderButtonClicked()) {
-            editingTemp = !editingTemp;
+            if (editMode == NONE) {
+                editMode = TEMP;
+            } else if (editMode == TEMP) {
+                editMode = TIME;
+            } else if (editMode == TIME) {
+                editMode = NONE;
+            }
             delay(200); // debounce
         }
 
         // If in edit mode, handle rotary changes
-        if (editingTemp) {
+        if (editMode == TEMP) {
             long currentEncoder = rotaryEncoder.readEncoder();
             if (currentEncoder != lastEncoder) {
                 int delta = (int)-(currentEncoder - lastEncoder);
@@ -259,10 +314,19 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
                 if (setTemp > 250) setTemp = 250;
                 lastEncoder = currentEncoder;
             }
+        } else if (editMode == TIME) {
+            long currentEncoder = rotaryEncoder.readEncoder();
+            if (currentEncoder != lastEncoder) {
+                int delta = (int)-(currentEncoder - lastEncoder);
+                setTimeMins += delta; // 1 min per detent
+                if (setTimeMins < 0) setTimeMins = 0; // Off
+                if (setTimeMins > 720) setTimeMins = 720; // 12 hours
+                lastEncoder = currentEncoder;
+            }
         }
         // Add a break condition if you want to exit the oven cycle
-        // For example, break if a button is long pressed or maxTimeMs exceeded
-        //if ((millis() - oven.startTimeMs) > maxTimeMs) break;
+        // For example, break if a button is long pressed or timer expired
+        //if ((millis() - oven.startTimeMs) > setTimeMins*60000UL && setTimeMins > 0) break;
     }
 }
 
