@@ -48,6 +48,7 @@ result onStartLeadFree(eventMask e, navNode& nav, prompt &item);
 result onStartLeaded(eventMask e, navNode& nav, prompt &item);
 result onStartLowTemp(eventMask e, navNode& nav, prompt &item);
 result onStartCustom2(eventMask e, navNode& nav, prompt &item);
+result onStartOven(eventMask e, navNode& nav, prompt &item);
 
 // Optionally remove or comment out this if not used anymore
 // result onProfileStart(eventMask e, navNode& nav, prompt &item);

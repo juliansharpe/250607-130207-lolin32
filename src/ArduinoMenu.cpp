@@ -6,6 +6,7 @@
 #include "ArduinoMenu.h"
 #include "SolderProfile.h"
 #include "Free_Fonts.h"
+#include "Oven.h"
 
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(21,22, 5, -1, 2);
 
@@ -204,6 +205,35 @@ void StartReflowProfile(ReflowProfile& profile) {
       digitalWrite(fryerElement,0);
     }
   }
+}
+
+void StartOven(float defaultTemp, uint32_t maxTimeMs) {
+    Oven oven(defaultTemp, maxTimeMs);
+    gfx.fillScreen(Black);
+    gfx.setTextColor(Blue, Black);
+    gfx.setTextSize(1);
+    oven.initGraph(gfx, 0, 14, GFX_WIDTH, GFX_HEIGHT-14);
+
+    float temp = 0;
+    unsigned long readtime = millis();
+    oven.reset();
+
+    while (true) { // Replace with a proper exit condition as needed
+        unsigned long elapsed = millis() - readtime;
+        if (elapsed > 250) {
+            readtime = millis();
+            temp = GetFilteredTemp(ReadTemp(false));
+            oven.updateGraph(temp);
+
+            gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+            gfx.setTextSize(1);
+            gfx.setCursor(0, 0);
+            gfx.printf("Oven: %.0fC    ", temp);
+        }
+        // Add a break condition if you want to exit the oven cycle
+        // For example, break if a button is pressed or maxTimeMs exceeded
+        //if ((millis() - oven.startTimeMs) > maxTimeMs) break;
+    }
 }
 
 void loop() {

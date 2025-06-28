@@ -77,7 +77,7 @@ MENU(reflowStartMenu, "Start Reflow",doNothing,noEvent,wrapStyle
 MENU(ovenStartMenu, "Start Oven",doNothing,noEvent,wrapStyle
   ,FIELD(ovenTemp, "Temp", "C", 0, 250, 1, 0, doNothing,noEvent,noStyle)
   ,FIELD(Time, "Max time", "Mins", 0, 1440, 1, 0, doNothing,noEvent,noStyle)
-  ,OP("Cook >",doNothing,noEvent)
+  ,OP("Cook >",onStartOven,enterEvent)
   ,EXIT("< Back")
 );
 
@@ -132,5 +132,10 @@ result onStartLowTemp(eventMask e, navNode& nav, prompt &item) {
 }
 result onStartCustom2(eventMask e, navNode& nav, prompt &item) {
   StartReflowProfile(profiles[3]);
+  return proceed;
+}
+result onStartOven(eventMask e, navNode& nav, prompt &item) {
+  // ovenTemp is in C, Time is in minutes, convert Time to ms
+  StartOven((float)ovenTemp, (uint32_t)Time * 60000UL);
   return proceed;
 }
