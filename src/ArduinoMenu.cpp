@@ -216,23 +216,52 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
     oven.initGraph(gfx, 0, 14, GFX_WIDTH, GFX_HEIGHT-14);
 
     float temp = 0;
+    float setTemp = defaultTemp;
     unsigned long readtime = millis();
     oven.reset();
+    bool editingTemp = false;
+    long lastEncoder = rotaryEncoder.readEncoder();
 
-    while (true) { // Replace with a proper exit condition as needed
+    while (true) {
         unsigned long elapsed = millis() - readtime;
         if (elapsed > 250) {
             readtime = millis();
             temp = GetFilteredTemp(ReadTemp(false));
             oven.updateGraph(temp);
+        }
+        gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+        gfx.setTextSize(1);
+        gfx.setCursor(0, 0);
+        if (editingTemp) {
+            gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+            gfx.printf("Oven: %.0fC/", temp);
+            gfx.setTextColor(TFT_BLUE, TFT_BLACK);                
+            gfx.printf("%.0fC", setTemp);
+        } else {
+            gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+            gfx.printf("Oven: %.0fC/%.0fC", temp, setTemp);
+        }
+    
 
-            gfx.setTextColor(TFT_BLUE, TFT_BLACK);
-            gfx.setTextSize(1);
-            gfx.setCursor(0, 0);
-            gfx.printf("Oven: %.0fC    ", temp);
+        // Handle rotary button click to enter/exit edit mode
+        if (rotaryEncoder.isEncoderButtonClicked()) {
+            editingTemp = !editingTemp;
+            delay(200); // debounce
+        }
+
+        // If in edit mode, handle rotary changes
+        if (editingTemp) {
+            long currentEncoder = rotaryEncoder.readEncoder();
+            if (currentEncoder != lastEncoder) {
+                int delta = (int)-(currentEncoder - lastEncoder);
+                setTemp += delta; // 1 degree per detent
+                if (setTemp < 0) setTemp = 0;
+                if (setTemp > 250) setTemp = 250;
+                lastEncoder = currentEncoder;
+            }
         }
         // Add a break condition if you want to exit the oven cycle
-        // For example, break if a button is pressed or maxTimeMs exceeded
+        // For example, break if a button is long pressed or maxTimeMs exceeded
         //if ((millis() - oven.startTimeMs) > maxTimeMs) break;
     }
 }
