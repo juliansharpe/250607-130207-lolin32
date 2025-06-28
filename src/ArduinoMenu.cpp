@@ -211,6 +211,7 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
     Oven oven(defaultTemp, maxTimeMs);
     gfx.fillScreen(Black);
     gfx.setTextColor(Blue, Black);
+    gfx.setTextFont(1);
     gfx.setTextSize(1);
     oven.initGraph(gfx, 0, 14, GFX_WIDTH, GFX_HEIGHT-14);
 
