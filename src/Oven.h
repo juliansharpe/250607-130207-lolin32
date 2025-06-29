@@ -25,7 +25,6 @@ private:
     uint32_t startTimeMs;
     TFT_eSPI* tftRef;
     int graphX, graphY, graphW, graphH;
-    float graphMinTemp;
     bool graphInitialized;
     // Data points for graph
     DataPoint points[MAX_POINTS];
