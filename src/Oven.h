@@ -14,7 +14,7 @@ public:
     void initGraph(TFT_eSPI& tft, int x, int y, int w, int h);
     void updateGraph(float actualTemp);
     void reset();
-    void setGraphLimits(float maxTemp, uint32_t maxTimeMs);
+    void setGraphLimits(float maxTemp, uint32_t maxTimeMins);
     void redrawGraph();
 
 private:

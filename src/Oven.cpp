@@ -19,10 +19,15 @@ void Oven::initGraph(TFT_eSPI& tft, int x, int y, int w, int h) {
     if (graphMaxTemp == graphMinTemp) graphMaxTemp += 1;
     tft.drawRect(graphX, graphY, graphW, graphH, TFT_NAVY);
     // Draw horizontal grid lines and temperature labels (every 50 deg)
-    int tempStep = 50;
+    int tempStep = 25;
+    if( (graphMaxTemp / 25) > 6) {
+        tempStep = 50;
+    }
+    
+
     for (int temp = ((int)graphMinTemp / tempStep) * tempStep; temp <= (int)graphMaxTemp; temp += tempStep) {
         int py = graphY + graphH - (int)((temp - graphMinTemp) * graphH / (graphMaxTemp - graphMinTemp));
-        if ((temp % 100) == 0) {
+        if ((temp % 50) == 0) {
             tft.drawFastHLine(graphX, py, graphW, TFT_NAVY);
         } else {
             tft.drawFastHLine(graphX, py, graphW, 0x0008);
@@ -75,4 +80,60 @@ void Oven::updateGraph(float actualTemp) {
 
 void Oven::reset() {
     startTimeMs = 0;
+}
+
+void Oven::redrawGraph() {
+    if (!tftRef || !graphInitialized) return;
+    // Clear graph area
+    tftRef->fillRect(graphX, graphY, graphW, graphH, TFT_BLACK);
+    tftRef->drawRect(graphX, graphY, graphW, graphH, TFT_NAVY);
+    // Redraw grid lines (same as in initGraph)
+    int tempStep = 25;
+    if ((graphMaxTemp / 25) > 6) {
+        tempStep = 50;
+    }
+    for (int temp = ((int)graphMinTemp / tempStep) * tempStep; temp <= (int)graphMaxTemp; temp += tempStep) {
+        int py = graphY + graphH - (int)((temp - graphMinTemp) * graphH / (graphMaxTemp - graphMinTemp));
+        if ((temp % 50) == 0) {
+            tftRef->drawFastHLine(graphX, py, graphW, TFT_NAVY);
+        } else {
+            tftRef->drawFastHLine(graphX, py, graphW, 0x0008);
+        }
+        tftRef->setTextColor(TFT_NAVY, TFT_BLACK);
+        if (((temp % 100) == 0) && (temp > 0)) {
+            tftRef->setTextSize(1);
+            tftRef->setCursor(graphX+4, py-4);
+            tftRef->printf("%3dc", temp);
+        }
+    }
+    // Redraw vertical grid lines
+    uint32_t secondsTotal = graphTotalTime / 1000;
+    for (uint32_t sec = 60; sec < secondsTotal; sec += 600) {
+        int px = graphX + (int)((sec * 1000UL * graphW) / graphTotalTime);
+        tftRef->setTextColor(TFT_NAVY, TFT_BLACK);
+        if (sec % 120 == 0) {
+            tftRef->drawFastVLine(px, graphY, graphH, TFT_NAVY);
+            tftRef->setTextSize(1);
+            tftRef->setCursor(px - 10, graphY + graphH - 12);
+            tftRef->printf("%lum", sec/60);
+        } else {
+            tftRef->drawFastVLine(px, graphY, graphH, 0x0008);
+        }
+    }
+    // Redraw all recorded points
+    for (int i = 0; i < numPoints; ++i) {
+        uint32_t pointTimeMs = i * 60000UL;
+        int px = graphX + (int)((pointTimeMs * graphW) / graphTotalTime);
+        int py = graphY + graphH - (int)((points[i].temp - graphMinTemp) * graphH / (graphMaxTemp - graphMinTemp));
+        if (px >= graphX && px < graphX + graphW && py >= graphY && py < graphY + graphH) {
+            tftRef->drawPixel(px, py, TFT_YELLOW);
+        }
+    }
+}
+
+void Oven::setGraphLimits(float maxTemp, uint32_t maxTimeMins) {
+    graphMaxTemp = maxTemp;
+    graphTotalTime = maxTimeMins * 60000UL; // Convert minutes to milliseconds
+    if (graphMaxTemp == graphMinTemp) graphMaxTemp += 1; // Ensure maxTemp is greater than minTemp
+    redrawGraph();
 }

@@ -74,18 +74,10 @@ MENU(reflowStartMenu, "Start Reflow",doNothing,noEvent,wrapStyle
   ,EXIT("< Back")
 );
 
-MENU(ovenStartMenu, "Start Oven",doNothing,noEvent,wrapStyle
-  ,FIELD(ovenTemp, "Temp", "C", 0, 250, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(Time, "Max time", "Mins", 0, 1440, 1, 0, doNothing,noEvent,noStyle)
-  ,OP("Cook >",onStartOven,enterEvent)
-  ,EXIT("< Back")
-);
-
 MENU(mainMenu, "Workshop Oven",doNothing,noEvent,wrapStyle
   ,SUBMENU(reflowStartMenu)
-  ,SUBMENU(ovenStartMenu)
   ,SUBMENU(profileMenu)
-  ,EXIT("<Exit")
+  ,OP("Start Oven >",onStartOven,enterEvent)
 );
 
 idx_t serialTops[MAX_DEPTH]={0};

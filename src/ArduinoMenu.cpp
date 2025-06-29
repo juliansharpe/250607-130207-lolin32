@@ -207,6 +207,43 @@ void StartReflowProfile(ReflowProfile& profile) {
   }
 }
 
+void WriteTemp(float temp, float settemp, bool isEditing)
+{
+    gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+    
+    gfx.printf("Oven:%.0fc/", temp);
+    if (isEditing) {
+            gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+
+    } else {
+            gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+    }
+    gfx.printf("%.0fc ", settemp);   
+}
+
+void WriteTime(int setTimeMins, bool isEditing)
+{
+    gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+    gfx.printf("Timer:");
+
+    if (isEditing) {
+        gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+    } else {
+        gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+    }
+    if (setTimeMins == 0) {
+        gfx.printf("Off");
+    } else {
+        int hrs = setTimeMins / 60;
+        int mins = setTimeMins % 60;
+        if (hrs > 0) {
+            gfx.printf("%d:%02d    ", hrs, mins);
+        } else {
+            gfx.printf("%dm    ", mins);
+        }
+    }
+}
+
 void StartOven(float defaultTemp, uint32_t maxTimeMs) {
     Oven oven(defaultTemp, maxTimeMs);
     gfx.fillScreen(Black);
@@ -231,57 +268,11 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
             temp = GetFilteredTemp(ReadTemp(false));
             oven.updateGraph(temp);
         }
-        gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+
         gfx.setTextSize(1);
         gfx.setCursor(0, 0);
-        if (editMode == TEMP) {
-            gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-            gfx.printf("Oven:%.0fC/", temp);
-            gfx.setTextColor(TFT_BLUE, TFT_BLACK);
-            gfx.printf("%.0fC  ", setTemp);
-            gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-            gfx.printf("Time:");
-            if (setTimeMins == 0) {
-                gfx.printf("Off");
-            } else {
-                int hrs = setTimeMins / 60;
-                int mins = setTimeMins % 60;
-                if (hrs > 0) {
-                    gfx.printf("%d:%02d  ", hrs, mins);
-                } else {
-                    gfx.printf("%d min   ", mins);
-                }
-            }
-        } else if (editMode == TIME) {
-            gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-            gfx.printf("Set Timer: ");
-            gfx.setTextColor(TFT_BLUE, TFT_BLACK);
-            if (setTimeMins == 0) {
-                gfx.printf("Off");
-            } else {
-                int hrs = setTimeMins / 60;
-                int mins = setTimeMins % 60;
-                if (hrs > 0) {
-                    gfx.printf("%d:%02d  ", hrs, mins);
-                } else {
-                    gfx.printf("%d min  ", mins);
-                }
-            }
-        } else {
-            gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-            gfx.printf("Oven:%.0fC/%.0fC Time:", temp, setTemp);
-            if (setTimeMins == 0) {
-                gfx.printf("Off  ");
-            } else {
-                int hrs = setTimeMins / 60;
-                int mins = setTimeMins % 60;
-                if (hrs > 0) {
-                    gfx.printf("%d:%02d  ", hrs, mins);
-                } else {
-                    gfx.printf("%d min  ", mins);
-                }
-            }
-        }
+        WriteTemp(temp, setTemp, editMode == TEMP);
+        WriteTime(setTimeMins, editMode == TIME);
 
         // Handle rotary button click to cycle edit modes
         if (rotaryEncoder.isEncoderButtonClicked()) {
@@ -291,6 +282,11 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
                 editMode = TIME;
             } else if (editMode == TIME) {
                 editMode = NONE;
+                if (setTimeMins > 0) {
+                    oven.setGraphLimits(setTemp + 25, setTimeMins);
+                } else { // If timer is off, set graph limits to 25C above setTemp
+                    oven.setGraphLimits(setTemp + 25, 60); // 1 minute for off state
+                }
             }
             delay(200); // debounce
         }
