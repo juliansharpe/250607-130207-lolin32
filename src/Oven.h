@@ -10,7 +10,7 @@ public:
     };
     static const int MAX_POINTS = 120; // 2 hours max, 1 per minute
 
-    Oven(float defaultTemp, uint32_t maxTimeMs, float maxGraphTemp = 0, uint32_t maxGraphTimeMs = 0);
+    Oven(float defaultTemp, uint32_t maxTimeMs, float maxGraphTemp = 100, uint32_t maxGraphTimeMins = 60);
     void initGraph(TFT_eSPI& tft, int x, int y, int w, int h);
     void updateGraph(float actualTemp);
     void reset();
@@ -21,7 +21,7 @@ private:
     float defaultTemp;
     uint32_t maxTimeMs;
     float graphMaxTemp;
-    uint32_t graphTotalTime;
+    uint32_t graphTotalTimeMins;
     uint32_t startTimeMs;
     TFT_eSPI* tftRef;
     int graphX, graphY, graphW, graphH;
