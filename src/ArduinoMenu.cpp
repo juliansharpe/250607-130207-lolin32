@@ -218,13 +218,37 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
     EditMode editMode = NONE;
     long lastEncoder = rotaryEncoder.readEncoder();
 
+    // --- PID and ElementPWM setup ---
+    InitPID();
+    ElementPWM elementPWM(mainElement, fryerElement, 1000); // 1Hz PWM
+    uint8_t PWMMain = 0;
+    uint8_t PWMFryer = 0;
+
+    digitalWrite(fan, 1); // Turn on the fan
+
     while (true) {
         unsigned long elapsed = millis() - readtime;
         if (elapsed > 250) {
             readtime = millis();
             temp = GetFilteredTemp(ReadTemp(false));
             oven.updateGraph(temp);
+
+            // --- PID control logic ---
+            SetPIDTargetTemp(setTemp);
+            float pidOutput = GetPIDOutput(temp);
+            pidOutput = constrain(pidOutput, 0, 100);
+
+            if (pidOutput > 50) {
+                PWMMain = 100;
+                PWMFryer = constrain((pidOutput - 50) * 2, 0, 100);
+            } else {
+                PWMMain = constrain(pidOutput * 2, 0, 100);
+                PWMFryer = 0;
+            }
+            elementPWM.setPWM(PWMMain, PWMFryer);
         }
+        // Regularly update the PWM outputs
+        elementPWM.process();
 
         gfx.setTextSize(1);
         gfx.setCursor(0, 0);
