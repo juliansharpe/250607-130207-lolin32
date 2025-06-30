@@ -17,41 +17,8 @@ void Oven::initGraph(TFT_eSPI& tft, int x, int y, int w, int h) {
     graphMaxTemp = defaultTemp + 25;
     graphTotalTimeMins = 60; 
     if (graphMaxTemp == 0) graphMaxTemp += 1; // Use 0 instead of graphMinTemp
-    tft.drawRect(graphX, graphY, graphW, graphH, TFT_NAVY);
-    // Draw horizontal grid lines and temperature labels (every 50 deg)
-    int tempStep = 25;
-    if( (graphMaxTemp / 25) > 6) {
-        tempStep = 50;
-    }
-    
-    for (int temp = 0; temp <= (int)graphMaxTemp; temp += tempStep) {
-        int py = graphY + graphH - (int)((temp /* - 0 */) * graphH / (graphMaxTemp /* - 0 */));
-        if ((temp % 50) == 0) {
-            tft.drawFastHLine(graphX, py, graphW, TFT_NAVY);
-        } else {
-            tft.drawFastHLine(graphX, py, graphW, 0x0008);
-        }
-        tft.setTextColor(TFT_NAVY, TFT_BLACK);
-        if (((temp % 100) == 0) && (temp > 0)) {
-            tft.setTextSize(1);
-            tft.setCursor(graphX+4, py-4);
-            tft.printf("%3dc", temp);
-        }
-    }
-    // Draw vertical grid lines for each 60s interval
-    uint32_t secondsTotal = graphTotalTimeMins * 60UL;
-    for (uint32_t sec = 60; sec < secondsTotal; sec += 600) {
-        int px = graphX + (int)((sec * graphW) / (graphTotalTimeMins * 60UL));
-        tft.setTextColor(TFT_NAVY, TFT_BLACK);
-        if (sec % 120 == 0) {
-            tft.drawFastVLine(px, graphY, graphH, TFT_NAVY);
-            tft.setTextSize(1);
-            tft.setCursor(px - 10, graphY + graphH - 12);
-            tft.printf("%lum", sec/60);
-        } else {
-            tft.drawFastVLine(px, graphY, graphH, 0x0008);
-        }
-    }
+    reset();
+    redrawGraph();
     graphInitialized = true;
 }
 
@@ -151,7 +118,12 @@ void Oven::redrawGraph() {
         int px = graphX + (int)((pointTimeMin * graphW) / graphTotalTimeMins);
         int py = graphY + graphH - (int)((points[i].temp /* - 0 */) * graphH / (graphMaxTemp /* - 0 */));
         if (px >= graphX && px < graphX + graphW && py >= graphY && py < graphY + graphH) {
-            tftRef->drawPixel(px, py, TFT_YELLOW);
+            if( i < (numPoints-1) ) {
+                // Draw the line
+                int nextPx = graphX + (int)(((pointTimeMin + 1) * graphW) / graphTotalTimeMins);
+                int nextPy = graphY + graphH - (int)(points[i+1].temp * graphH / graphMaxTemp);
+                tftRef->drawLine(px, py, nextPx, nextPy, TFT_YELLOW);
+            } 
         }
     }
 }

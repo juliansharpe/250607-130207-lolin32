@@ -226,10 +226,24 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
 
     digitalWrite(fan, 1); // Turn on the fan
 
+    unsigned long timerEndMs = 0;
+    bool timerActive = false;
+
     while (true) {
-        unsigned long elapsed = millis() - readtime;
+        unsigned long now = millis();
+        unsigned long elapsed = now - readtime;
+        unsigned long msLeft = 0;
+        int minsLeft = 0;
+        if (timerActive) {
+            msLeft = (timerEndMs > now) ? (timerEndMs - now) : 0;
+            minsLeft = msLeft / 60000;
+        } else {
+            msLeft = 0;
+            minsLeft = setTimeMins;
+        }
+
         if (elapsed > 250) {
-            readtime = millis();
+            readtime = now;
             temp = GetFilteredTemp(ReadTemp(false));
             oven.updateGraph(temp);
 
@@ -246,6 +260,20 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
                 PWMFryer = 0;
             }
             elementPWM.setPWM(PWMMain, PWMFryer);
+
+            // Write out to the serial monitor the temp, settemp, pid output, and PID components
+            if (timerActive && msLeft == 0) {
+                Serial.println("Timer expired, stopping heat.");
+                timerActive = false;
+                elementPWM.setPWM(0, 0);
+                elementPWM.process();
+                break; // Exit the loop if timer expired
+            }
+            Serial.printf(
+                "Temp: %.1fC, SetTemp: %.1fC, PID Output: %.0f, Timer: %d mins | P:%.0f I:%.0f D:%.0f\n",
+                temp, setTemp, pidOutput, minsLeft,
+                myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD()
+            );
         }
         // Regularly update the PWM outputs
         elementPWM.process();
@@ -253,7 +281,7 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
         gfx.setTextSize(1);
         gfx.setCursor(0, 0);
         WriteTemp(temp, setTemp, editMode == TEMP);
-        WriteTime(setTimeMins, editMode == TIME);
+        WriteTime(minsLeft, editMode == TIME);
 
         // Handle rotary button click to cycle edit modes
         if (rotaryEncoder.isEncoderButtonClicked()) {
@@ -263,10 +291,14 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
                 editMode = TIME;
             } else if (editMode == TIME) {
                 editMode = NONE;
+                // When timer is set, start/restart countdown from now
                 if (setTimeMins > 0) {
                     oven.setGraphLimits(setTemp + 25, setTimeMins);
+                    timerEndMs = millis() + (unsigned long)setTimeMins * 60000UL;
+                    timerActive = true;
                 } else { // If timer is off, set graph limits to 25C above setTemp
                     oven.setGraphLimits(setTemp + 25, 60); // 1 minute for off state
+                    timerActive = false;
                 }
             }
             delay(200); // debounce
@@ -289,12 +321,19 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
                 setTimeMins += delta; // 1 min per detent
                 if (setTimeMins < 0) setTimeMins = 0; // Off
                 if (setTimeMins > 720) setTimeMins = 720; // 12 hours
+                timerEndMs = millis() + (unsigned long)setTimeMins * 60000UL;
+                timerActive = (setTimeMins != 0);
                 lastEncoder = currentEncoder;
             }
         }
-        // Add a break condition if you want to exit the oven cycle
-        // For example, break if a button is long pressed or timer expired
-        //if ((millis() - oven.startTimeMs) > setTimeMins*60000UL && setTimeMins > 0) break;
+
+        // Break if timer is active and expired
+        if (timerActive && msLeft == 0) {
+            Serial.println("Oven timer expired. Stopping heat.");
+            elementPWM.setPWM(0, 0);
+            elementPWM.process();
+        }
+        // Optionally, add other break conditions (e.g., button long press)
     }
 }
 

@@ -13,7 +13,7 @@ ReflowProfile profiles[] = {
 const char* profileNames[] = { "Lead-Free", "Leaded", "Low temp", "Custom 2" };
 
 // === Settings Variables ===
-int ovenTemp = 80;
+int ovenTemp = 0;
 int Time = 60;
 
 // Define rotary input

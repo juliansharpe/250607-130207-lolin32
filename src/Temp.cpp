@@ -59,7 +59,7 @@ float ReadTemp(bool block) {
         float rawTemp = thermocouple.readThermocoupleTemperature();
         currentReading = GetFilteredTemp(rawTemp);
 
-        Serial.printf("Temp: (R:%.2fC, F:%.2fC) d:%.2fC\n", rawTemp, currentReading, rawTemp-currentReading );
+        //Serial.printf("Temp: (R:%.2fC, F:%.2fC) d:%.2fC\n", rawTemp, currentReading, rawTemp-currentReading );
     } 
 
     return currentReading;
