@@ -7,6 +7,7 @@
 #include "SolderProfile.h"
 #include "Free_Fonts.h"
 #include "Oven.h"
+#include "ElementPWM.h"
 
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(21,22, 5, -1, 2);
 
@@ -69,37 +70,7 @@ void StartReflowProfile(ReflowProfile& profile) {
   gfx.setTextColor(Blue,Black);
   gfx.setTextSize(1);
 
-  // // --- Prime: Heat chamber to +2C above current temp, max 30s ---
-  // digitalWrite(fan,1); // Turn off the fan
-  // digitalWrite(mainElement,1);
-  // digitalWrite(fryerElement,1);
-
-  // unsigned long primeStart = millis();
-  // const unsigned long primeTimeout = 30000; // 30 seconds
-
-  // float oldTemp = GetFilteredTemp(ReadTemp(true));
-  // while (millis() - primeStart < primeTimeout) {
-  //   delay(1000);
-  //   float newTemp = GetFilteredTemp(ReadTemp(true));
-  //   if( (newTemp - oldTemp) > 0.3f) {
-  //     break;
-  //   }
-    
-  //   gfx.setTextColor(TFT_NAVY, TFT_BLACK);
-  //   gfx.setTextSize(1);
-  //   gfx.setCursor(0, 0);
-  //   gfx.printf("Priming: %.1f - %.1fC   ", newTemp, newTemp - oldTemp);
-  //   oldTemp = newTemp;
-  // }
-
-  // digitalWrite(mainElement,0);
-  // digitalWrite(fryerElement,0);
-
   float temp=0;
-  uint32_t startPWMTime = 0;
-  uint16_t PWMMain = 0;
-  uint16_t PWMFryer = 0;
-  const uint32_t MaxPWM = 99;
   InitPID();  
 
   solderProfile.startReflow();
@@ -108,18 +79,19 @@ void StartReflowProfile(ReflowProfile& profile) {
   solderProfile.initGraph(gfx, 0, 14, GFX_WIDTH, GFX_HEIGHT-14);
   solderProfile.drawGraph();
 
-  uint32_t delta=0; 
-
   digitalWrite(fan,1); // Turn on the fan
   unsigned long readtime = millis();
   float feedForwardAccumulator = -1000.0;
-  uint8_t mainPWMSet, fryPWMset;
-
 
   // --- Track error statistics ---
   float diffSum = 0.0f;
   float diffMax = 0.0f;
   uint32_t diffCount = 0;
+
+  // --- Use ElementPWM for SSR control ---
+  ElementPWM elementPWM(mainElement, fryerElement, 1000); // 1Hz PWM
+  uint8_t PWMMain = 0;
+  uint8_t PWMFryer = 0;
 
   while( solderProfile.currentPhase() != SolderProfile::COMPLETE) {    
     unsigned long elapsed = millis() - readtime;
@@ -184,26 +156,11 @@ void StartReflowProfile(ReflowProfile& profile) {
         PWMMain = constrain(pidOutput * 2, 0, 100);
         PWMFryer = 0;
       }
+      // Set PWM levels for this cycle
+      elementPWM.setPWM(PWMMain, PWMFryer);
     }
-     
-    uint32_t delta = (millis() - startPWMTime) / 10;
-    if(delta > MaxPWM) {
-      // Start PWM cycle
-      mainPWMSet = PWMMain;
-      fryPWMset = PWMFryer;
-      startPWMTime = millis();
-      delta = 0;
-      digitalWrite(mainElement,1);
-      digitalWrite(fryerElement,1);
-    }
-
-    if( delta >= mainPWMSet ) {
-      digitalWrite(mainElement,0);
-    }
-
-    if( delta >= fryPWMset ) {
-      digitalWrite(fryerElement,0);
-    }
+    // Regularly update the PWM outputs
+    elementPWM.process();
   }
 }
 
