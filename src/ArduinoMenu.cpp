@@ -69,6 +69,7 @@ void StartReflowProfile(ReflowProfile& profile) {
   gfx.fillScreen(Black);
   gfx.setTextColor(Blue,Black);
   gfx.setTextSize(1);
+  gfx.setTextFont(0);
 
   float temp=0;
   InitPID();  
@@ -201,19 +202,20 @@ void WriteTime(int setTimeMins, bool isEditing)
     }
 }
 
-void StartOven(float defaultTemp, uint32_t maxTimeMs) {
-    Oven oven(defaultTemp, maxTimeMs);
+void StartOven() {
+    Oven oven;
     gfx.fillScreen(Black);
     gfx.setTextColor(Blue, Black);
     gfx.setTextFont(1);
     gfx.setTextSize(1);
-    oven.initGraph(gfx, 0, 14, GFX_WIDTH-1, GFX_HEIGHT-14);
 
     float temp = 0;
-    float setTemp = defaultTemp;
-    int setTimeMins = 60; // default 60 minutes
+    float setTemp = 0;
+    int setTimeMins = 15; 
+    oven.setGraphLimits(setTemp + 25, setTimeMins);
+    oven.initGraph(gfx, 0, 14, GFX_WIDTH-1, GFX_HEIGHT-14);
     unsigned long readtime = millis();
-    oven.reset();
+  
     enum EditMode { NONE, TEMP, TIME };
     EditMode editMode = NONE;
     long lastEncoder = rotaryEncoder.readEncoder();
@@ -227,7 +229,8 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
     digitalWrite(fan, 1); // Turn on the fan
 
     unsigned long timerEndMs = 0;
-    bool timerActive = false;
+    bool timerActive = true;
+    timerEndMs = millis() + (unsigned long)setTimeMins * 60000UL;
 
     while (true) {
         unsigned long now = millis();
@@ -245,7 +248,7 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
         if (elapsed > 250) {
             readtime = now;
             temp = GetFilteredTemp(ReadTemp(false));
-            oven.updateGraph(temp);
+            oven.updateGraph(temp, setTemp);
 
             // --- PID control logic ---
             SetPIDTargetTemp(setTemp);
@@ -269,11 +272,11 @@ void StartOven(float defaultTemp, uint32_t maxTimeMs) {
                 elementPWM.process();
                 break; // Exit the loop if timer expired
             }
-            Serial.printf(
-                "Temp: %.1fC, SetTemp: %.1fC, PID Output: %.0f, Timer: %d mins | P:%.0f I:%.0f D:%.0f\n",
-                temp, setTemp, pidOutput, minsLeft,
-                myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD()
-            );
+            // Serial.printf(
+            //     "Temp: %.1fC, SetTemp: %.1fC, PID Output: %.0f, Timer: %d mins | P:%.0f I:%.0f D:%.0f\n",
+            //     temp, setTemp, pidOutput, minsLeft,
+            //     myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD()
+            //);
         }
         // Regularly update the PWM outputs
         elementPWM.process();

@@ -6,13 +6,15 @@
 class Oven {
 public:
     struct DataPoint {
-        float temp;
+        uint16_t temp;
     };
-    static const int MAX_POINTS = 120; // 2 hours max, 1 per minute
+    static const int MAX_POINTS = 12 * 60 * 3; // 12 hours max at one per 20 seconds
+    static const unsigned long INC_MS = 20000UL; // 12 hours max at one per 10 seconds
+    
 
-    Oven(float defaultTemp, uint32_t maxTimeMs, float maxGraphTemp = 100, uint32_t maxGraphTimeMins = 60);
+    Oven();
     void initGraph(TFT_eSPI& tft, int x, int y, int w, int h);
-    void updateGraph(float actualTemp);
+    void updateGraph(float actualTemp, float setTemp);
     void reset();
     void setGraphLimits(float maxTemp, uint32_t maxTimeMins);
     void redrawGraph();
@@ -29,6 +31,9 @@ private:
     // Data points for graph
     DataPoint points[MAX_POINTS];
     int numPoints;
-    uint32_t lastPointMinute;
+    int32_t lastPointInc;
     void recordPoint(uint32_t nowMs, float temp);
+    int tempToY(float temp) const;
+    int timeMsToX(uint32_t elapsedMs) const;
+    float currentSetpoint = 0.0f;
 };

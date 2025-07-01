@@ -14,7 +14,7 @@ const char* profileNames[] = { "Lead-Free", "Leaded", "Low temp", "Custom 2" };
 
 // === Settings Variables ===
 int ovenTemp = 0;
-int Time = 60;
+int Time = 15;
 
 // Define rotary input
 RotaryEventIn reIn(
@@ -127,7 +127,6 @@ result onStartCustom2(eventMask e, navNode& nav, prompt &item) {
   return proceed;
 }
 result onStartOven(eventMask e, navNode& nav, prompt &item) {
-  // ovenTemp is in C, Time is in minutes, convert Time to ms
-  StartOven((float)ovenTemp, (uint32_t)Time * 60000UL);
+  StartOven();
   return proceed;
 }
