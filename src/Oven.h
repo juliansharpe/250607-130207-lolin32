@@ -30,7 +30,7 @@ private:
     bool graphInitialized;
     // Data points for graph
     DataPoint points[MAX_POINTS];
-    int numPoints;
+    int numPoints=0;
     int32_t lastPointInc;
     void recordPoint(uint32_t nowMs, float temp);
     int tempToY(float temp) const;

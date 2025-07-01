@@ -4,7 +4,7 @@
 Oven::Oven()
     : defaultTemp(0), maxTimeMs(15000UL), startTimeMs(0), tftRef(nullptr),
       graphX(0), graphY(0), graphW(0), graphH(0),
-      graphMaxTemp(100), graphTotalTimeMins(15), graphInitialized(false)
+      graphMaxTemp(100), graphTotalTimeMins(5), graphInitialized(false)
 {}
 
 void Oven::initGraph(TFT_eSPI& tft, int x, int y, int w, int h, float maxTemp, uint32_t totalTimeMins) {
@@ -16,7 +16,7 @@ void Oven::initGraph(TFT_eSPI& tft, int x, int y, int w, int h, float maxTemp, u
     if (graphMaxTemp == 0) graphMaxTemp += 1; // Use 0 instead of graphMinTemp
 
     startTimeMs = millis();
-    lastPointInc = -1;
+    lastPointInc = 0;
     numPoints = 0;
 
     graphInitialized = true;
@@ -34,22 +34,24 @@ void Oven::updateGraph(float actualTemp, float setTemp) {
         setGraphLimits(actualTemp + 20, graphTotalTimeMins);
         redrawGraph();
     }
-    
+
     uint32_t nowMs = millis();
     currentSetpoint = setTemp;
-    int32_t elapsedInc = (nowMs - startTimeMs) / INC_MS;
 
     // Check if the current time exceeds the max graph time, extend by 1 minute if so
     uint32_t elapsedMins = (nowMs - startTimeMs) / 60000UL;
     if (elapsedMins >= graphTotalTimeMins) {
-        setGraphLimits(graphMaxTemp, graphTotalTimeMins + 1);
+        setGraphLimits(graphMaxTemp, graphTotalTimeMins + 5);
         redrawGraph();
     }
 
+    int32_t elapsedInc = (nowMs - startTimeMs) / INC_MS;
+    points[numPoints].temp = (uint16_t) (actualTemp);
     if (elapsedInc > lastPointInc && numPoints < MAX_POINTS) {
-        points[numPoints].temp = (uint16_t) (actualTemp);
         numPoints++;
         lastPointInc = elapsedInc;
+        points[numPoints].temp = (uint16_t) (actualTemp);
+        Serial.printf("Recorded point %d at %lu ms: Temp = %.2f\n", numPoints, elapsedInc * INC_MS, actualTemp);
     }
     // Draw the latest point
     int px = timeMsToX(nowMs - startTimeMs);
@@ -189,5 +191,5 @@ int Oven::tempToY(float temp) const {
 // Helper: Convert elapsed time in ms to X pixel value
 int Oven::timeMsToX(uint32_t elapsedMs) const {
     if (graphTotalTimeMins == 0) return graphX;
-    return graphX + (int)(((elapsedMs/1000UL) * graphW) / (graphTotalTimeMins * 60UL));
+    return graphX + (int)( float(elapsedMs * graphW) / (graphTotalTimeMins * 60000.0));
 }

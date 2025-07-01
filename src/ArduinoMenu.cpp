@@ -213,7 +213,7 @@ void StartOven() {
     float setTemp = 0;
     int setTimeMins = 15; 
     //oven.setGraphLimits(setTemp + 25, setTimeMins);
-    oven.initGraph(gfx, 0, 14, GFX_WIDTH-1, GFX_HEIGHT-14, 50.0, 1);
+    oven.initGraph(gfx, 0, 14, GFX_WIDTH-1, GFX_HEIGHT-14, 50.0, 5);
     unsigned long readtime = millis();
   
     enum EditMode { NONE, TEMP, TIME };
@@ -301,13 +301,15 @@ void StartOven() {
                 // When timer is set, start/restart countdown from now
                 if (setTimeMins > 0) {
                     unsigned long finishMins = (elapsed / 60000UL) + setTimeMins;
-                    oven.setGraphLimits(setTemp + 50, (elapsed / 60000UL) + 1);
+                    //oven.setGraphLimits(setTemp + 50, (elapsed / 60000UL) + 1);
                     timerEndMs = millis() + (finishMins * 60000UL);
                     timerActive = true;
                 } else { // If timer is off, set graph limits to 25C above setTemp
-                    oven.setGraphLimits(setTemp + 50, 1); 
+                    //oven.setGraphLimits(setTemp + 50, 1); 
                     timerActive = false;
                 }
+                oven.redrawGraph();
+                InitPID(); // Reinitialize PID for new settings
             }
             delay(200); // debounce
         }
