@@ -38,11 +38,16 @@ void Oven::updateGraph(float actualTemp, float setTemp) {
     uint32_t nowMs = millis();
     currentSetpoint = setTemp;
     int32_t elapsedInc = (nowMs - startTimeMs) / INC_MS;
-    // Serial.printf("ElapseInc: %lu, LastPointInc: %d, numPoints: %d\n",
-    //                elapsedInc, lastPointInc, numPoints);
+
+    // Check if the current time exceeds the max graph time, extend by 1 minute if so
+    uint32_t elapsedMins = (nowMs - startTimeMs) / 60000UL;
+    if (elapsedMins >= graphTotalTimeMins) {
+        setGraphLimits(graphMaxTemp, graphTotalTimeMins + 1);
+        redrawGraph();
+    }
+
     if (elapsedInc > lastPointInc && numPoints < MAX_POINTS) {
         points[numPoints].temp = (uint16_t) (actualTemp);
-        // Serial.printf("Point #%4lu (%3lu:%02lu, %.1f°C)\n", numPoints, (elapsedInc*INC_MS)/60000UL, ((elapsedInc*INC_MS) / 1000UL) % 60UL, actualTemp);
         numPoints++;
         lastPointInc = elapsedInc;
     }
