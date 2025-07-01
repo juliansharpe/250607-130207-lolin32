@@ -13,7 +13,7 @@ public:
     
 
     Oven();
-    void initGraph(TFT_eSPI& tft, int x, int y, int w, int h);
+    void initGraph(TFT_eSPI& tft, int x, int y, int w, int h, float maxTemp=50.0, uint32_t totalTimeMins = 15);
     void updateGraph(float actualTemp, float setTemp);
     void reset();
     void setGraphLimits(float maxTemp, uint32_t maxTimeMins);

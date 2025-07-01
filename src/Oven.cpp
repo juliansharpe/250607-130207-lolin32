@@ -7,20 +7,34 @@ Oven::Oven()
       graphMaxTemp(100), graphTotalTimeMins(15), graphInitialized(false)
 {}
 
-void Oven::initGraph(TFT_eSPI& tft, int x, int y, int w, int h) {
+void Oven::initGraph(TFT_eSPI& tft, int x, int y, int w, int h, float maxTemp, uint32_t totalTimeMins) {
     tftRef = &tft;
     graphX = x;
     graphY = y;
     graphW = w;
     graphH = h;
     if (graphMaxTemp == 0) graphMaxTemp += 1; // Use 0 instead of graphMinTemp
-    reset();
-    redrawGraph();
+
+    startTimeMs = millis();
+    lastPointInc = -1;
+    numPoints = 0;
+
     graphInitialized = true;
+
+    setGraphLimits(maxTemp, totalTimeMins);
+
+    // reset();
+    // redrawGraph();
 }
 
 void Oven::updateGraph(float actualTemp, float setTemp) {
     if (!tftRef || !graphInitialized) return;
+    // Check if the actual temperature exceeds the current graph max temperature
+    if( actualTemp > graphMaxTemp) {
+        setGraphLimits(actualTemp + 20, graphTotalTimeMins);
+        redrawGraph();
+    }
+    
     uint32_t nowMs = millis();
     currentSetpoint = setTemp;
     int32_t elapsedInc = (nowMs - startTimeMs) / INC_MS;
@@ -28,7 +42,7 @@ void Oven::updateGraph(float actualTemp, float setTemp) {
     //                elapsedInc, lastPointInc, numPoints);
     if (elapsedInc > lastPointInc && numPoints < MAX_POINTS) {
         points[numPoints].temp = (uint16_t) (actualTemp);
-        Serial.printf("Point #%4lu (%3lu:%02lu, %.1f°C)\n", numPoints, (elapsedInc*INC_MS)/60000UL, ((elapsedInc*INC_MS) / 1000UL) % 60UL, actualTemp);
+        // Serial.printf("Point #%4lu (%3lu:%02lu, %.1f°C)\n", numPoints, (elapsedInc*INC_MS)/60000UL, ((elapsedInc*INC_MS) / 1000UL) % 60UL, actualTemp);
         numPoints++;
         lastPointInc = elapsedInc;
     }
@@ -36,6 +50,7 @@ void Oven::updateGraph(float actualTemp, float setTemp) {
     int px = timeMsToX(nowMs - startTimeMs);
     int py = tempToY(actualTemp);
     tftRef->drawPixel(px, py, TFT_YELLOW);
+
 }
 
 void Oven::reset() {
@@ -68,7 +83,7 @@ void Oven::redrawGraph() {
         if ((temp % majorStep) == 0) {
             tftRef->drawFastHLine(graphX, py, graphW, TFT_NAVY);
             tftRef->setTextSize(1);
-            tftRef->setCursor(graphX+4, py-4);
+            tftRef->setCursor(graphX+3, py+ 3);
             tftRef->setTextColor(TFT_NAVY, TFT_BLACK);
             tftRef->printf("%luc", temp);
         } else {
@@ -87,7 +102,7 @@ void Oven::redrawGraph() {
         majorStep = 5;  
     } else if (totalTimeMins < 60 ) {
         minorStep = 5; 
-        majorStep = 5; 
+        majorStep = 10; 
     } else if (totalTimeMins <= 120 ) {
         minorStep = 10; 
         majorStep = 30; 
@@ -107,11 +122,15 @@ void Oven::redrawGraph() {
             tftRef->drawFastVLine(px, graphY, graphH, TFT_NAVY);
             tftRef->setTextSize(1);
             tftRef->setCursor(px - 5, graphY + graphH - 12);
+            char textBuffer[10];
+            tftRef->setTextDatum(BR_DATUM);         
             if( min % 60 == 0) {
-                tftRef->printf("%luh", min/60);
+                snprintf(textBuffer, sizeof(textBuffer), "%luh", min/60);
             } else {
-                tftRef->printf("%lu", min % 60);
+                snprintf(textBuffer, sizeof(textBuffer), "%lu", min % 60);
             }
+            tftRef->drawString(textBuffer, px-1, graphY + graphH - 3);
+            tftRef->setTextDatum(TL_DATUM);
         } else {
             tftRef->drawFastVLine(px, graphY, graphH, 0x0008);
         }
@@ -142,7 +161,15 @@ void Oven::redrawGraph() {
 }
 
 void Oven::setGraphLimits(float maxTemp, uint32_t maxTimeMins) {
-    graphMaxTemp = maxTemp;
+    // Find the largest DataPoint temp
+    float maxDataTemp = maxTemp;
+    for (int i = 0; i < numPoints; ++i) {
+        if (points[i].temp > maxDataTemp) {
+            maxDataTemp = points[i].temp;
+        }
+    }
+    graphMaxTemp = maxDataTemp;
+    if (graphMaxTemp < maxTemp) graphMaxTemp = maxTemp;
     graphTotalTimeMins = maxTimeMins; 
     if (graphMaxTemp == 0) graphMaxTemp += 1; // Use 0 instead of graphMinTemp
     redrawGraph();
@@ -157,5 +184,5 @@ int Oven::tempToY(float temp) const {
 // Helper: Convert elapsed time in ms to X pixel value
 int Oven::timeMsToX(uint32_t elapsedMs) const {
     if (graphTotalTimeMins == 0) return graphX;
-    return graphX + (int)(((elapsedMs) * graphW) / (graphTotalTimeMins * 60000UL));
+    return graphX + (int)(((elapsedMs/1000UL) * graphW) / (graphTotalTimeMins * 60UL));
 }

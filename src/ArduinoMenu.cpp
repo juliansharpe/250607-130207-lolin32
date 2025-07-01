@@ -189,7 +189,7 @@ void WriteTime(int setTimeMins, bool isEditing)
     } else {
         gfx.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
     }
-    if (setTimeMins == 0) {
+    if (setTimeMins == -1) {
         gfx.printf("Off");
     } else {
         int hrs = setTimeMins / 60;
@@ -212,8 +212,8 @@ void StartOven() {
     float temp = 0;
     float setTemp = 0;
     int setTimeMins = 15; 
-    oven.setGraphLimits(setTemp + 25, setTimeMins);
-    oven.initGraph(gfx, 0, 14, GFX_WIDTH-1, GFX_HEIGHT-14);
+    //oven.setGraphLimits(setTemp + 25, setTimeMins);
+    oven.initGraph(gfx, 0, 14, GFX_WIDTH-1, GFX_HEIGHT-14, 50.0, setTimeMins);
     unsigned long readtime = millis();
   
     enum EditMode { NONE, TEMP, TIME };
@@ -239,16 +239,15 @@ void StartOven() {
         int minsLeft = 0;
         if (timerActive) {
             msLeft = (timerEndMs > now) ? (timerEndMs - now) : 0;
-            minsLeft = msLeft / 60000;
+            minsLeft = (msLeft + 30000) / 60000; // Round up to nearest minute
         } else {
             msLeft = 0;
-            minsLeft = setTimeMins;
+            minsLeft = 0;
         }
 
         if (elapsed > 250) {
             readtime = now;
             temp = GetFilteredTemp(ReadTemp(false));
-            oven.updateGraph(temp, setTemp);
 
             // --- PID control logic ---
             SetPIDTargetTemp(setTemp);
@@ -278,13 +277,18 @@ void StartOven() {
             //     myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD()
             //);
         }
+        oven.updateGraph(temp, setTemp);
         // Regularly update the PWM outputs
         elementPWM.process();
 
         gfx.setTextSize(1);
         gfx.setCursor(0, 0);
         WriteTemp(temp, setTemp, editMode == TEMP);
-        WriteTime(minsLeft, editMode == TIME);
+        if( editMode == TIME) {
+          WriteTime(setTimeMins, true);
+        } else {
+          WriteTime(minsLeft, false);
+        }
 
         // Handle rotary button click to cycle edit modes
         if (rotaryEncoder.isEncoderButtonClicked()) {
@@ -296,11 +300,12 @@ void StartOven() {
                 editMode = NONE;
                 // When timer is set, start/restart countdown from now
                 if (setTimeMins > 0) {
-                    oven.setGraphLimits(setTemp + 25, setTimeMins);
-                    timerEndMs = millis() + (unsigned long)setTimeMins * 60000UL;
+                    unsigned long finishMins = (elapsed / 60000UL) + setTimeMins;
+                    oven.setGraphLimits(setTemp + 50, finishMins + 1);
+                    timerEndMs = millis() + (finishMins * 60000UL);
                     timerActive = true;
                 } else { // If timer is off, set graph limits to 25C above setTemp
-                    oven.setGraphLimits(setTemp + 25, 60); // 1 minute for off state
+                    oven.setGraphLimits(setTemp + 50, 60); 
                     timerActive = false;
                 }
             }
@@ -322,10 +327,8 @@ void StartOven() {
             if (currentEncoder != lastEncoder) {
                 int delta = (int)-(currentEncoder - lastEncoder);
                 setTimeMins += delta; // 1 min per detent
-                if (setTimeMins < 0) setTimeMins = 0; // Off
+                if (setTimeMins < -1) setTimeMins = -1; // Off
                 if (setTimeMins > 720) setTimeMins = 720; // 12 hours
-                timerEndMs = millis() + (unsigned long)setTimeMins * 60000UL;
-                timerActive = (setTimeMins != 0);
                 lastEncoder = currentEncoder;
             }
         }
@@ -335,6 +338,21 @@ void StartOven() {
             Serial.println("Oven timer expired. Stopping heat.");
             elementPWM.setPWM(0, 0);
             elementPWM.process();
+            digitalWrite(mainElement, 0); // Turn off the main element
+            digitalWrite(fryerElement, 0); // Turn off the fryer element  
+            
+            gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+            gfx.setCursor(0, 0);
+            gfx.printf("Finished                   \n");
+            unsigned long finishTime = millis();
+            while(!rotaryEncoder.isEncoderButtonClicked())
+            {
+              if( millis() - finishTime > 10000) {
+                digitalWrite(fan, 0); // Turn off the fan
+              }
+              delay(100);
+            }
+            break; 
         }
         // Optionally, add other break conditions (e.g., button long press)
     }
