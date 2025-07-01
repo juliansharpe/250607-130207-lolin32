@@ -54,11 +54,11 @@ void setup() {
 void StartReflowProfile(ReflowProfile& profile) {
   // Convert ReflowProfile to SolderProfileParams (simple 4-phase profile)
   SolderProfileParams params;
-  params.phases[0] = {"Preheat", 0, (float)profile.preheatTemp, 180000, 180000, false};
+  params.phases[0] = {"Preheat", 0, (float)profile.preheatTemp, 140000, 140000, false};
   params.phases[1] = {"Soak", (float)profile.preheatTemp, (float)profile.soakTemp, 120000, 120000, false};
-  params.phases[2] = {"Peak", (float)profile.soakTemp, (float)profile.peakTemp, 70000, 120000, true};
+  params.phases[2] = {"Peak", (float)profile.soakTemp, (float)profile.peakTemp, 70000, 120000, false};
   params.phases[3] = {"Dwell", (float)profile.peakTemp, (float)profile.peakTemp, (uint32_t)profile.dwellTime*1000, (uint32_t)profile.dwellTime*1000, false};
-  params.phases[4] = {"Cool", (float)profile.peakTemp, 0, 90000, 90000, true};
+  params.phases[4] = {"Cool", (float)profile.peakTemp, 0, 90000, 90000, false};
   params.numPhases = 5;
 
   solderProfile.setProfile(params);
@@ -108,10 +108,10 @@ void StartReflowProfile(ReflowProfile& profile) {
       float pidOutput = GetPIDOutput(temp);
 
       // Add feed-forward control based on the current phase
-      const float maxHeatRate = 100.0 / 120.0; // 100 degrees in 120 seconds
+      const float maxHeatRate = 100.0 / 100.0; // 100 degrees in 100 seconds
 
       uint32_t nowMs = millis();
-      float feedForwardSlope = solderProfile.getFeedForwardSlope(20000); // seconds for feed-forward slope
+      float feedForwardSlope = solderProfile.getFeedForwardSlope(10000); // seconds for feed-forward slope
       float feedForwardPower = (feedForwardSlope / maxHeatRate) * 100.0; // Scale to 0-100
       feedForwardPower += setpoint / 10; // add term proportional to temperature
 

@@ -46,13 +46,17 @@ void Oven::updateGraph(float actualTemp, float setTemp) {
     }
 
     int32_t elapsedInc = (nowMs - startTimeMs) / INC_MS;
-    points[numPoints].temp = (uint16_t) (actualTemp);
-    if (elapsedInc > lastPointInc && numPoints < MAX_POINTS) {
-        numPoints++;
-        lastPointInc = elapsedInc;
-        points[numPoints].temp = (uint16_t) (actualTemp);
-        Serial.printf("Recorded point %d at %lu ms: Temp = %.2f\n", numPoints, elapsedInc * INC_MS, actualTemp);
+    int oldNumPoints = numPoints;
+    numPoints = (nowMs - startTimeMs) / INC_MS;
+    numPoints = numPoints < MAX_POINTS ? numPoints : MAX_POINTS - 1;
+    points[numPoints].temp = (uint16_t) (actualTemp * 10.0f); // Store temperature as 1/10th of a degree
+
+    if( oldNumPoints != numPoints) {
+        // print numPoints and value
+        Serial.printf("Recorded point %d at %lu ms: Temp = %0.1f\n", numPoints, elapsedInc * INC_MS, actualTemp);
+        oldNumPoints = numPoints;
     }
+
     // Draw the latest point
     int px = timeMsToX(nowMs - startTimeMs);
     int py = tempToY(actualTemp);
@@ -153,15 +157,16 @@ void Oven::redrawGraph() {
     for (int i = 0; i < numPoints; ++i) {
         uint32_t pointTimeMs = i * INC_MS;
         int px = timeMsToX(pointTimeMs);
-        int py = tempToY(points[i].temp);
+        int py = tempToY( (float)(points[i].temp) / 10.0f );
+        //Serial.printf("Redrawing point %d at %lu ms: Temp = %d, py = %d\n", i, pointTimeMs, points[i].temp, py);
         if( i < (numPoints-1) ) {
             // Draw the line
             int nextPx = timeMsToX(pointTimeMs + INC_MS);
-            int nextPy = tempToY((float)points[i+1].temp);
+            int nextPy = tempToY((float)(points[i+1].temp / 10.0f));
             tftRef->drawLine(px, py, nextPx, nextPy, TFT_YELLOW);
         } else {
             int nextPx = timeMsToX(millis() - startTimeMs);
-            int nextPy = tempToY((float)points[i].temp);
+            int nextPy = tempToY((float)(points[i].temp) / 10.0f);
             tftRef->drawLine(px, py, nextPx, nextPy, TFT_YELLOW);
         }
     }
@@ -172,7 +177,7 @@ void Oven::setGraphLimits(float maxTemp, uint32_t maxTimeMins) {
     float maxDataTemp = maxTemp;
     for (int i = 0; i < numPoints; ++i) {
         if (points[i].temp > maxDataTemp) {
-            maxDataTemp = points[i].temp;
+            maxDataTemp = (float) (points[i].temp) / 10.0f; // Convert back to degrees;
         }
     }
     graphMaxTemp = maxDataTemp;

@@ -31,9 +31,9 @@ Adafruit_MAX31856 thermocouple(MAX31856_CS, MAX31856_MOSI, MAX31856_MISO, MAX318
 // double Kp = 2.5, Ki = 0.030, Kd = 75; 9:16pm
 // double Kp = 2.0, Ki = 0.030, Kd = 75; // 12 Jun 7:56 Oscillations much better. Increase feed forward advance
 //double Kp = 2.0, Ki = 0.030, Kd = 75; 
-double Kp = 2.5, Ki = 0.02, Kd = 75; 
-
-
+//double Kp = 2.5, Ki = 0.02, Kd = 75;  // Ok. Kd makes has heavy influence and is noisey
+// double Kp = 2.5, Ki = 0.02, Kd = 45; // Improved. Decrease further
+double Kp = 2.5, Ki = 0.02, Kd = 25; 
 
 PID_v2 myPID(Kp, Ki, Kd, PID::Direct);
 

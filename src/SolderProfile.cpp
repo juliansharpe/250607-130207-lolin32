@@ -7,9 +7,9 @@ static const SolderProfileParams defaultProfile = {
     {
         {"Preheat",   0, 150, PHASE_MS(180), PHASE_MS(180), false},
         {"Soak",    150, 180, PHASE_MS(120), PHASE_MS(120), false},
-        {"Peak",    180, 235, PHASE_MS( 70), PHASE_MS(120), true},
+        {"Peak",    180, 235, PHASE_MS( 70), PHASE_MS(120), false},
         {"Dwell",   235, 235, PHASE_MS( 30), PHASE_MS( 20), false},
-        {"Cool",    220,   0, PHASE_MS( 90), PHASE_MS( 90), true}
+        {"Cool",    220,   0, PHASE_MS( 90), PHASE_MS( 90), false}
     },
     5
 };
