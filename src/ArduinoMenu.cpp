@@ -184,7 +184,6 @@ void StartReflowProfile(ReflowProfile& profile) {
         digitalWrite(mainElement, 0);
         digitalWrite(fryerElement, 0);
         delay(5000); // Give time to display the message
-        gfx.setTextFont(2);
         return;
       }
     }
@@ -197,7 +196,6 @@ void StartReflowProfile(ReflowProfile& profile) {
   digitalWrite(mainElement, 0);
   digitalWrite(fryerElement, 0);
   WaitForButtonPress(60UL * 60000UL); 
-  gfx.setTextSize(2);
 }
 
 void WriteTemp(float temp, float settemp, bool isEditing)
@@ -385,7 +383,6 @@ void StartOven() {
             gfx.setTextFont(2);
             return;
         }
-        // Optionally, add other break conditions (e.g., button long press)
     }
 }
 
@@ -396,9 +393,9 @@ void loop() {
   gfx.setTextColor(TFT_BLUE, TFT_BLACK);
   gfx.setTextFont(1);
   gfx.setTextSize(1);
-  gfx.setTextDatum(BR_DATUM);
+  gfx.setTextDatum(TR_DATUM);
   snprintf(textBuffer, sizeof(textBuffer), "  %.0fC", GetFilteredTemp(ReadTemp(true)));
-  gfx.drawString(textBuffer, 159, 127);
+  gfx.drawString(textBuffer, 159, 0);
  
 //  gfx.printf("  %.0fC", GetFilteredTemp(ReadTemp(true)));
   gfx.setTextFont(2);

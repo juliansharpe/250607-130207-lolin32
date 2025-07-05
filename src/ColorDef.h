@@ -21,6 +21,6 @@ const colorDef<uint16_t> colors[6] MEMMODE={
   {{(uint16_t)Gray, (uint16_t)Gray},  {(uint16_t)Gray, (uint16_t)White, (uint16_t)White}},//fgColor
   {{(uint16_t)White,(uint16_t)Black}, {(uint16_t)Gray,(uint16_t)White,(uint16_t)Blue}},//valColor
   {{(uint16_t)White,(uint16_t)Black}, {(uint16_t)Gray, (uint16_t)White,(uint16_t)Blue}},//unitColor
-  {{(uint16_t)White,(uint16_t)Gray},  {(uint16_t)Black, (uint16_t)Black,  (uint16_t)White}},//cursorColor
+  {{(uint16_t)White,(uint16_t)Gray},  {(uint16_t)Black, (uint16_t)Gray,  (uint16_t)White}},//cursorColor
   {{(uint16_t)White,(uint16_t)Yellow},{(uint16_t)Black,  (uint16_t)Red,   (uint16_t)Red}},//titleColor
 };

@@ -2,7 +2,7 @@
 
 #include <menu.h>
 #include <menuIO/serialIO.h>
-#include <menuIO/TFT_eSPIOut.h>
+#include <myTFT_eSPIOut.h>
 #include <menuIO/chainStream.h>
 #include <menuIO/rotaryEventIn.h>
 #include <ColorDef.h>

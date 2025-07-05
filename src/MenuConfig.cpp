@@ -113,22 +113,32 @@ void menuLoop(AiEsp32RotaryEncoder& rotaryEncoder) {
 // === Functions for each Start action ===
 result onStartLeadFree(eventMask e, navNode& nav, prompt &item) {
   StartReflowProfile(profiles[0]);
+  gfx.fillScreen(Black);
+  gfx.setTextSize(2);
   return quit;
 }
 result onStartLeaded(eventMask e, navNode& nav, prompt &item) {
   StartReflowProfile(profiles[1]);
+  gfx.fillScreen(Black);
+  gfx.setTextSize(2);
   return quit;
 }
 result onStartLowTemp(eventMask e, navNode& nav, prompt &item) {
   StartReflowProfile(profiles[2]);
+  gfx.fillScreen(Black);
+  gfx.setTextSize(2);
   return quit;
 }
 result onStartCustom2(eventMask e, navNode& nav, prompt &item) {
   StartReflowProfile(profiles[3]);
+  gfx.fillScreen(Black);
+  gfx.setTextSize(2);
   return quit;
 }
 result onStartOven(eventMask e, navNode& nav, prompt &item) {
   StartOven();
+  gfx.fillScreen(Black);
+  gfx.setTextSize(2);
   return quit;
 }
 
