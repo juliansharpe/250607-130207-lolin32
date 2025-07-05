@@ -8,4 +8,4 @@ void loop();
 void IRAM_ATTR readEncoderISR();
 void StartReflowProfile(ReflowProfile& profile);
 void StartOven();
-void WaitForButtonPress(unsigned long timeoutMs = 60000);
+bool WaitForButtonPress(unsigned long timeoutMs = 60000);

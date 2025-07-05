@@ -113,23 +113,23 @@ void menuLoop(AiEsp32RotaryEncoder& rotaryEncoder) {
 // === Functions for each Start action ===
 result onStartLeadFree(eventMask e, navNode& nav, prompt &item) {
   StartReflowProfile(profiles[0]);
-  return proceed;
+  return quit;
 }
 result onStartLeaded(eventMask e, navNode& nav, prompt &item) {
   StartReflowProfile(profiles[1]);
-  return proceed;
+  return quit;
 }
 result onStartLowTemp(eventMask e, navNode& nav, prompt &item) {
   StartReflowProfile(profiles[2]);
-  return proceed;
+  return quit;
 }
 result onStartCustom2(eventMask e, navNode& nav, prompt &item) {
   StartReflowProfile(profiles[3]);
-  return proceed;
+  return quit;
 }
 result onStartOven(eventMask e, navNode& nav, prompt &item) {
   StartOven();
-  return proceed;
+  return quit;
 }
 
 Preferences preferences;

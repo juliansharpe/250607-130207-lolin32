@@ -106,7 +106,7 @@ void SolderProfile::update(float actualTemp, float output) {
         }
 
         // Draw a line for the output value
-        tftRef->drawPixel(px, (graphY + graphH) - (output/2), TFT_DARKGREEN);
+        tftRef->drawPixel(px, (graphY + graphH) - (output/4), TFT_DARKGREEN);
 
         // Print phase and actual temperature at the top of the screen
         TFT_eSPI& tft = *tftRef;

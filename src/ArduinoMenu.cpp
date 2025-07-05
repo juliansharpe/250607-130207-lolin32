@@ -62,13 +62,12 @@ void StartReflowProfile(ReflowProfile& profile) {
   // Convert ReflowProfile to SolderProfileParams (simple 4-phase profile)
   SolderProfileParams params;
   params.phases[0] = {"Preheat", 0, (float)profile.preheatTemp, 140000, 140000, false};
-  params.phases[0] = {"Preheat", 0, (float)10.0f, 1000, 1000, false};
 
   params.phases[1] = {"Soak", (float)profile.preheatTemp, (float)profile.soakTemp, 120000, 120000, false};
   params.phases[2] = {"Peak", (float)profile.soakTemp, (float)profile.peakTemp, 70000, 120000, false};
   params.phases[3] = {"Dwell", (float)profile.peakTemp, (float)profile.peakTemp, (uint32_t)profile.dwellTime*1000, (uint32_t)profile.dwellTime*1000, false};
   params.phases[4] = {"Cool", (float)profile.peakTemp, 0, 90000, 90000, false};
-  params.numPhases = 1;
+  params.numPhases = 5;
 
   solderProfile.setProfile(params);
 
@@ -142,11 +141,7 @@ void StartReflowProfile(ReflowProfile& profile) {
       diffCount++;
 
       // Update the solder profile with the current temperature
-      Serial.printf("-> Update\n");
-      Serial.flush();
       solderProfile.update(temp, pidOutput); 
-      Serial.printf("<- Update\n");
-      Serial.flush();
 
       if( solderProfile.currentPhase() != SolderProfile::COMPLETE) {
         Serial.printf(
@@ -177,6 +172,22 @@ void StartReflowProfile(ReflowProfile& profile) {
     }
     // Regularly update the PWM outputs
     elementPWM.process();
+
+    // Check if to Abort
+    if (rotaryEncoder.isEncoderButtonClicked()) {
+      gfx.setCursor(0, 0);
+      gfx.printf("Abort?               \n");
+      if( WaitForButtonPress(5000UL)) {
+        Serial.println("Reflow aborted by user.");
+        gfx.setCursor(0, 0);
+        gfx.printf("Reflow Aborted.               \n");
+        digitalWrite(mainElement, 0);
+        digitalWrite(fryerElement, 0);
+        delay(5000); // Give time to display the message
+        gfx.setTextFont(2);
+        return;
+      }
+    }
   }
 
   // Reflow complete, stop the elements
@@ -186,6 +197,7 @@ void StartReflowProfile(ReflowProfile& profile) {
   digitalWrite(mainElement, 0);
   digitalWrite(fryerElement, 0);
   WaitForButtonPress(60UL * 60000UL); 
+  gfx.setTextSize(2);
 }
 
 void WriteTemp(float temp, float settemp, bool isEditing)
@@ -369,15 +381,9 @@ void StartOven() {
             gfx.setTextColor(TFT_BLUE, TFT_BLACK);
             gfx.setCursor(0, 0);
             gfx.printf("Finished                   \n");
-            unsigned long finishTime = millis();
-            while(!rotaryEncoder.isEncoderButtonClicked())
-            {
-              if( millis() - finishTime > 10000) {
-                digitalWrite(fan, 0); // Turn off the fan
-              }
-              delay(100);
-            }
-            break; 
+            WaitForButtonPress(60000UL); // Wait for 60 seconds before exiting
+            gfx.setTextFont(2);
+            return;
         }
         // Optionally, add other break conditions (e.g., button long press)
     }
@@ -400,12 +406,14 @@ void loop() {
   
 }
 
-void WaitForButtonPress(unsigned long timeoutMs) {
+bool WaitForButtonPress(unsigned long timeoutMs) {
   unsigned long startTime = millis();
   while (!rotaryEncoder.isEncoderButtonClicked()) {
     if (millis() - startTime > timeoutMs) {
-      break; // Timeout
+      // Timeout reached, return false
+      return false;
     }
     delay(100);
   }
+  return true;
 } 
