@@ -8,6 +8,7 @@
 #include "Free_Fonts.h"
 #include "Oven.h"
 #include "ElementPWM.h"
+#include "logo.h"
 
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(21,22, 5, -1, 2);
 
@@ -50,17 +51,24 @@ void setup() {
 
   InitTempSensor();
   loadProfilesFromFlash();
+  
+  // Display the logo
+  gfx.pushImage(0, 0, 160, 128, logo); // Display the logo
+  WaitForButtonPress(5000UL); 
+  gfx.fillScreen(Black);
 }
 
 void StartReflowProfile(ReflowProfile& profile) {
   // Convert ReflowProfile to SolderProfileParams (simple 4-phase profile)
   SolderProfileParams params;
   params.phases[0] = {"Preheat", 0, (float)profile.preheatTemp, 140000, 140000, false};
+  params.phases[0] = {"Preheat", 0, (float)10.0f, 1000, 1000, false};
+
   params.phases[1] = {"Soak", (float)profile.preheatTemp, (float)profile.soakTemp, 120000, 120000, false};
   params.phases[2] = {"Peak", (float)profile.soakTemp, (float)profile.peakTemp, 70000, 120000, false};
   params.phases[3] = {"Dwell", (float)profile.peakTemp, (float)profile.peakTemp, (uint32_t)profile.dwellTime*1000, (uint32_t)profile.dwellTime*1000, false};
   params.phases[4] = {"Cool", (float)profile.peakTemp, 0, 90000, 90000, false};
-  params.numPhases = 5;
+  params.numPhases = 1;
 
   solderProfile.setProfile(params);
 
@@ -134,17 +142,23 @@ void StartReflowProfile(ReflowProfile& profile) {
       diffCount++;
 
       // Update the solder profile with the current temperature
+      Serial.printf("-> Update\n");
+      Serial.flush();
       solderProfile.update(temp, pidOutput); 
+      Serial.printf("<- Update\n");
+      Serial.flush();
 
-      Serial.printf(
-        "P:%s Temp:(A:%.1f,S:%.1f,D:%.1f) TStats(A:%.1f M:%.1f) FF:%.1f Out:%.0f (P:%.0f,I:%.0f,D:%.0f,F:%.0f)\n",
-        solderProfile.phases[solderProfile.currentPhase()].phaseName,
-        temp, setpoint, diff,
-        (diffCount > 0 ? diffSum / diffCount : 0.0f), diffMax,
-        feedForwardAccumulator,
-        pidOutput,
-        myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD(), feedForwardPower
-      );
+      if( solderProfile.currentPhase() != SolderProfile::COMPLETE) {
+        Serial.printf(
+          "P:%s Temp:(A:%.1f,S:%.1f,D:%.1f) TStats(A:%.1f M:%.1f) FF:%.1f Out:%.0f (P:%.0f,I:%.0f,D:%.0f,F:%.0f)\n",
+          solderProfile.phases[solderProfile.currentPhase()].phaseName,
+          temp, setpoint, diff,
+          (diffCount > 0 ? diffSum / diffCount : 0.0f), diffMax,
+          feedForwardAccumulator,
+          pidOutput,
+          myPID.GetLastP(), myPID.GetLastI(), myPID.GetLastD(), feedForwardPower
+        );
+      }
 
       gfx.setTextColor(TFT_BLUE, TFT_BLACK);
       gfx.setTextSize(1);
@@ -164,6 +178,14 @@ void StartReflowProfile(ReflowProfile& profile) {
     // Regularly update the PWM outputs
     elementPWM.process();
   }
+
+  // Reflow complete, stop the elements
+  gfx.setCursor(0, 0);
+  gfx.printf("Reflow Complete.               \n");       
+  Serial.println("Reflow complete, stopping heat.");
+  digitalWrite(mainElement, 0);
+  digitalWrite(fryerElement, 0);
+  WaitForButtonPress(60UL * 60000UL); 
 }
 
 void WriteTemp(float temp, float settemp, bool isEditing)
@@ -378,3 +400,12 @@ void loop() {
   
 }
 
+void WaitForButtonPress(unsigned long timeoutMs) {
+  unsigned long startTime = millis();
+  while (!rotaryEncoder.isEncoderButtonClicked()) {
+    if (millis() - startTime > timeoutMs) {
+      break; // Timeout
+    }
+    delay(100);
+  }
+} 
