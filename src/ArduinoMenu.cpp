@@ -49,6 +49,7 @@ void setup() {
 	rotaryEncoder.setAcceleration(50);
 
   InitTempSensor();
+  loadProfilesFromFlash();
 }
 
 void StartReflowProfile(ReflowProfile& profile) {

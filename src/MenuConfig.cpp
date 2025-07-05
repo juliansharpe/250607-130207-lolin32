@@ -1,6 +1,7 @@
 #include "MenuConfig.h"
 #include "Free_Fonts.h"
 #include "ArduinoMenu.h"
+#include <Preferences.h>
 
 // === Reflow Profile Data ===
 ReflowProfile profiles[] = {
@@ -27,34 +28,34 @@ RotaryEventIn reIn(
 MENU_INPUTS(in,&reIn);
 
 MENU(leadFreeMenu, "Lead-Free",doNothing,noEvent,wrapStyle
-  ,FIELD(profiles[0].preheatTemp, "Preheat", "C", 100, 200, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(profiles[0].soakTemp, "Soak", "C", 120, 220, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(profiles[0].peakTemp, "Peak", "C", 180, 250, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(profiles[0].dwellTime, "Dwell", "s", 20, 120, 1, 0, doNothing,noEvent,noStyle)
+  ,FIELD(profiles[0].preheatTemp, "Preheat", "C", 100, 200, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
+  ,FIELD(profiles[0].soakTemp, "Soak", "C", 120, 220, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
+  ,FIELD(profiles[0].peakTemp, "Peak", "C", 180, 250, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
+  ,FIELD(profiles[0].dwellTime, "Dwell", "s", 20, 120, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
   ,EXIT("< Back")
 );
 
 MENU(leadedMenu, "Leaded",doNothing,noEvent,wrapStyle
-  ,FIELD(profiles[1].preheatTemp, "Preheat", "C", 100, 180, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(profiles[1].soakTemp, "Soak", "C", 120, 200, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(profiles[1].peakTemp, "Peak", "C", 160, 230, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(profiles[1].dwellTime, "Dwell", "s", 20, 120, 1, 0, doNothing,noEvent,noStyle)
+  ,FIELD(profiles[1].preheatTemp, "Preheat", "C", 100, 180, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
+  ,FIELD(profiles[1].soakTemp, "Soak", "C", 120, 200, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
+  ,FIELD(profiles[1].peakTemp, "Peak", "C", 160, 230, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
+  ,FIELD(profiles[1].dwellTime, "Dwell", "s", 20, 120, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
   ,EXIT("< Back")
 );
 
 MENU(custom1Menu, "183 Low Temp",doNothing,noEvent,wrapStyle
-  ,FIELD(profiles[2].preheatTemp, "Preheat", "C", 100, 180, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(profiles[2].soakTemp, "Soak", "C", 120, 200, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(profiles[2].peakTemp, "Peak", "C", 160, 230, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(profiles[2].dwellTime, "Dwell", "s", 20, 120, 1, 0, doNothing,noEvent,noStyle)
+  ,FIELD(profiles[2].preheatTemp, "Preheat", "C", 100, 180, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
+  ,FIELD(profiles[2].soakTemp, "Soak", "C", 120, 200, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
+  ,FIELD(profiles[2].peakTemp, "Peak", "C", 160, 230, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
+  ,FIELD(profiles[2].dwellTime, "Dwell", "s", 20, 120, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
   ,EXIT("< Back")
 );
 
 MENU(custom2Menu, "Custom 2",doNothing,noEvent,wrapStyle
-  ,FIELD(profiles[3].preheatTemp, "Preheat", "C", 100, 180, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(profiles[3].soakTemp, "Soak", "C", 120, 200, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(profiles[3].peakTemp, "Peak", "C", 160, 230, 1, 0, doNothing,noEvent,noStyle)
-  ,FIELD(profiles[3].dwellTime, "Dwell", "s", 20, 120, 1, 0, doNothing,noEvent,noStyle)
+  ,FIELD(profiles[3].preheatTemp, "Preheat", "C", 100, 180, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
+  ,FIELD(profiles[3].soakTemp, "Soak", "C", 120, 200, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
+  ,FIELD(profiles[3].peakTemp, "Peak", "C", 160, 230, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
+  ,FIELD(profiles[3].dwellTime, "Dwell", "s", 20, 120, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
   ,EXIT("< Back")
 );
 
@@ -130,3 +131,46 @@ result onStartOven(eventMask e, navNode& nav, prompt &item) {
   StartOven();
   return proceed;
 }
+
+Preferences preferences;
+
+// Helper: Save all profiles to flash
+void saveProfilesToFlash() {
+  Serial.println("Saving profiles to flash...");
+  preferences.begin("reflow", false);
+  for (int i = 0; i < 4; ++i) {
+    char key[16];
+    snprintf(key, sizeof(key), "p%d_preheat", i);
+    preferences.putInt(key, profiles[i].preheatTemp);
+    snprintf(key, sizeof(key), "p%d_soak", i);
+    preferences.putInt(key, profiles[i].soakTemp);
+    snprintf(key, sizeof(key), "p%d_peak", i);
+    preferences.putInt(key, profiles[i].peakTemp);
+    snprintf(key, sizeof(key), "p%d_dwell", i);
+    preferences.putInt(key, profiles[i].dwellTime);
+  }
+  preferences.end();
+}
+
+// Helper: Load all profiles from flash (if present)
+void loadProfilesFromFlash() {
+  Serial.println("Loading profiles to flash...");
+  preferences.begin("reflow", true);
+  for (int i = 0; i < 4; ++i) {
+    char key[16];
+    snprintf(key, sizeof(key), "p%d_preheat", i);
+    int preheat = preferences.getInt(key, profiles[i].preheatTemp);
+    snprintf(key, sizeof(key), "p%d_soak", i);
+    int soak = preferences.getInt(key, profiles[i].soakTemp);
+    snprintf(key, sizeof(key), "p%d_peak", i);
+    int peak = preferences.getInt(key, profiles[i].peakTemp);
+    snprintf(key, sizeof(key), "p%d_dwell", i);
+    int dwell = preferences.getInt(key, profiles[i].dwellTime);
+    profiles[i].preheatTemp = preheat;
+    profiles[i].soakTemp = soak;
+    profiles[i].peakTemp = peak;
+    profiles[i].dwellTime = dwell;
+  }
+  preferences.end();
+}
+
