@@ -390,12 +390,12 @@ void loop() {
   static char textBuffer[50];
 
   menuLoop(rotaryEncoder);
-  gfx.setTextColor(TFT_BLUE, TFT_BLACK);
+  gfx.setTextColor(TFT_RED, TFT_BLACK);
   gfx.setTextFont(1);
   gfx.setTextSize(1);
   gfx.setTextDatum(TR_DATUM);
   snprintf(textBuffer, sizeof(textBuffer), "  %.0fC", GetFilteredTemp(ReadTemp(true)));
-  gfx.drawString(textBuffer, 159, 0);
+  gfx.drawString(textBuffer, 159, 8);
  
 //  gfx.printf("  %.0fC", GetFilteredTemp(ReadTemp(true)));
   gfx.setTextFont(2);

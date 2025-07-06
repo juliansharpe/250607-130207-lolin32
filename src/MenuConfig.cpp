@@ -27,7 +27,7 @@ RotaryEventIn reIn(
 );
 MENU_INPUTS(in,&reIn);
 
-MENU(leadFreeMenu, "Lead-Free",doNothing,noEvent,wrapStyle
+MENU(leadFreeMenu, "Lead-Free",doNothing,noEvent,noStyle
   ,FIELD(profiles[0].preheatTemp, "Preheat", "C", 100, 200, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
   ,FIELD(profiles[0].soakTemp, "Soak", "C", 120, 220, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
   ,FIELD(profiles[0].peakTemp, "Peak", "C", 180, 250, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
@@ -35,7 +35,7 @@ MENU(leadFreeMenu, "Lead-Free",doNothing,noEvent,wrapStyle
   ,EXIT("< Back")
 );
 
-MENU(leadedMenu, "Leaded",doNothing,noEvent,wrapStyle
+MENU(leadedMenu, "Leaded",doNothing,noEvent,noStyle
   ,FIELD(profiles[1].preheatTemp, "Preheat", "C", 100, 180, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
   ,FIELD(profiles[1].soakTemp, "Soak", "C", 120, 200, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
   ,FIELD(profiles[1].peakTemp, "Peak", "C", 160, 230, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
@@ -43,7 +43,7 @@ MENU(leadedMenu, "Leaded",doNothing,noEvent,wrapStyle
   ,EXIT("< Back")
 );
 
-MENU(custom1Menu, "183 Low Temp",doNothing,noEvent,wrapStyle
+MENU(custom1Menu, "183 Low Temp",doNothing,noEvent,noStyle
   ,FIELD(profiles[2].preheatTemp, "Preheat", "C", 100, 180, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
   ,FIELD(profiles[2].soakTemp, "Soak", "C", 120, 200, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
   ,FIELD(profiles[2].peakTemp, "Peak", "C", 160, 230, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
@@ -51,7 +51,7 @@ MENU(custom1Menu, "183 Low Temp",doNothing,noEvent,wrapStyle
   ,EXIT("< Back")
 );
 
-MENU(custom2Menu, "Custom 2",doNothing,noEvent,wrapStyle
+MENU(custom2Menu, "Custom 2",doNothing,noEvent,noStyle
   ,FIELD(profiles[3].preheatTemp, "Preheat", "C", 100, 180, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
   ,FIELD(profiles[3].soakTemp, "Soak", "C", 120, 200, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
   ,FIELD(profiles[3].peakTemp, "Peak", "C", 160, 230, 1, 0, saveProfilesToFlash,exitEvent,noStyle)
@@ -59,7 +59,7 @@ MENU(custom2Menu, "Custom 2",doNothing,noEvent,wrapStyle
   ,EXIT("< Back")
 );
 
-MENU(profileMenu, "Edit Profile",doNothing,noEvent,wrapStyle
+MENU(profileMenu, "Edit Reflow Profile",doNothing,noEvent,noStyle
   ,SUBMENU(leadFreeMenu)
   ,SUBMENU(leadedMenu)
   ,SUBMENU(custom1Menu)
@@ -67,7 +67,7 @@ MENU(profileMenu, "Edit Profile",doNothing,noEvent,wrapStyle
   ,EXIT("< Back")
 );
 
-MENU(reflowStartMenu, "Start Reflow",doNothing,noEvent,wrapStyle
+MENU(reflowStartMenu, "Start Reflow",doNothing,noEvent,noStyle
   ,OP("Start Lead-Free",onStartLeadFree,enterEvent)
   ,OP("Start Leaded",onStartLeaded,enterEvent)
   ,OP("Start Low temp",onStartLowTemp,enterEvent)
@@ -75,10 +75,10 @@ MENU(reflowStartMenu, "Start Reflow",doNothing,noEvent,wrapStyle
   ,EXIT("< Back")
 );
 
-MENU(mainMenu, "Workshop Oven",doNothing,noEvent,wrapStyle
+MENU(mainMenu, "Workshop Oven",doNothing,noEvent,noStyle
   ,SUBMENU(reflowStartMenu)
+  ,OP("Start Oven",onStartOven,enterEvent)
   ,SUBMENU(profileMenu)
-  ,OP("Start Oven >",onStartOven,enterEvent)
 );
 
 idx_t serialTops[MAX_DEPTH]={0};

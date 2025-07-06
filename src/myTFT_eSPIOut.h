@@ -89,7 +89,7 @@ namespace Menu {
 				void drawCursor(idx_t ln,bool selected,status stat,bool edit=false,idx_t panelNr=0) override {
 					const panel p=panels[panelNr];
 					// gfxOut::drawCursor(ln,selected,stat);
-					//gfx.drawRect(p.x*resX,(p.y+ln)*resY,maxX()*resX,resY,getColor(cursorColor,selected,enabledStatus,false));
+					//gfx.drawRect(p.x*resX+2,(p.y+ln)*resY+2,16,16,getColor(cursorColor,selected,enabledStatus,false));
                     gfx.drawRoundRect(
                         p.x*resX, (p.y+ln)*resY,
                         maxX()*resX, resY,

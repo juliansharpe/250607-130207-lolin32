@@ -13,7 +13,7 @@
 #define GFX_WIDTH 160
 #define GFX_HEIGHT 128
 #define MAX_DEPTH 3
-#define fontW 10
+#define fontW 8
 #define fontH 20
 
 // === Reflow Profile Data ===
